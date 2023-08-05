@@ -35,15 +35,23 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         private const val TAG = "SurfaceMediaOverlay"
     }
 
-    private val mContainerView =
-        object : FrameLayout(context) {
-            override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
-                super.requestDisallowInterceptTouchEvent(disallowIntercept)
-                this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
-                    disallowIntercept
-                )
-            }
+    private data class VirtualDisplayPresentation(
+        val virtualDisplay: VirtualDisplay,
+        val presentation: Presentation
+    )
+
+    private class ContainerView(
+        private val renderLayer: SurfaceMediaOverlayLayer
+    ) : FrameLayout(renderLayer.context) {
+        override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+            super.requestDisallowInterceptTouchEvent(disallowIntercept)
+            renderLayer.parent.requestDisallowInterceptTouchEvent(
+                disallowIntercept
+            )
         }
+    }
+
+    private val mContainerView = ContainerView(this)
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: View
         get() = mContainerView
@@ -52,11 +60,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         mContainerView.removeAllViews()
         mContainerView.addView(view)
     }
-
-    private data class VirtualDisplayPresentation(
-        val virtualDisplay: VirtualDisplay,
-        val presentation: Presentation
-    )
 
     init {
         val array = context.obtainStyledAttributes(

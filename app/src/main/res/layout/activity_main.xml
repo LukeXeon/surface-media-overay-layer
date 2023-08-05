@@ -9,10 +9,23 @@
     android:orientation="vertical"
     tools:context=".MainActivity2">
 
-    <com.example.myapplication.SurfaceMediaOverlayLayer
-        android:id="@+id/surface"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="100dp"
-        app:layout="@layout/fragment_main" />
+        android:overScrollMode="never">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="1000dp"
+            android:minHeight="1000dp"
+            android:paddingTop="100dp">
+
+            <com.example.myapplication.SurfaceMediaOverlayLayer
+                android:id="@+id/surface"
+                android:layout_width="match_parent"
+                android:layout_height="500dp"
+                app:layout="@layout/fragment_main" />
+        </FrameLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>
