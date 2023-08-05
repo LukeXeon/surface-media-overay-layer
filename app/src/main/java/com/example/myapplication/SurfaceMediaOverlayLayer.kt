@@ -61,7 +61,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
 
         /**
-         * 这里要异步销毁否则会崩在系统里（这咖喱味的代码...）
+         * 这里要异步销毁，等待系统将窗口Stop完，否则会崩在系统里，（这咖喱味的代码...）
          * */
         fun dismiss() {
             mHandler.sendEmptyMessage(MSG_POST_DISMISS)
