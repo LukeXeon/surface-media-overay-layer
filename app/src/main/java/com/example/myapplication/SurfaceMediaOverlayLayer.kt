@@ -3,6 +3,8 @@ package com.example.myapplication
 import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.AttributeSet
@@ -66,6 +68,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 )
                 presentation.setContentView(contentView)
                 presentation.show()
+                presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 mRenderer = PresentationRenderer(virtualDisplay, presentation)
             }
 

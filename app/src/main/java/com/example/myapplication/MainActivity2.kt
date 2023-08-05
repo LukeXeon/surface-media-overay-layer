@@ -21,9 +21,9 @@ class MainActivity2 : AppCompatActivity() {
         val imageView = surface.contentView.findViewById<ImageView>(R.id.image)
         val button = surface.contentView.findViewById<Button>(R.id.button)
         button.isClickable = true
+        surface.isClickable = true
         imageView.isClickable = true
-        DragViewUtil.registerDragAction(button)
-        DragViewUtil.registerDragAction(imageView)
+        DragViewUtil.registerDragAction(surface)
         Glide.with(imageView)
             .asGif()
             .load(URL)
