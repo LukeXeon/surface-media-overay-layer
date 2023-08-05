@@ -38,7 +38,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 ) : SurfaceView(context, attrs, defStyleAttr) {
 
     companion object {
-        private const val TAG = "SurfaceMediaOverlay"
         private const val MSG_POST_DISMISS = 101
     }
 
@@ -107,7 +106,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 val displayManager =
                     context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                 val virtualDisplay = displayManager.createVirtualDisplay(
-                    TAG,
+                    this@SurfaceMediaOverlayLayer.toString(),
                     width,
                     height,
                     context.resources.displayMetrics.densityDpi,
