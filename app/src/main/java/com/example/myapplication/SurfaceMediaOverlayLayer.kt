@@ -21,7 +21,7 @@ import androidx.core.view.NestedScrollingParent3
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
- * 可以用作播放视频时视频层和弹幕层之间的中间叠层
+ * 可以用作播放视频时视频层和弹幕层之间的中间叠层（这里讨论的是大家都用[SurfaceView]渲染的情况）
  * 使用[Presentation]和[VirtualDisplay]实现
  * 在渲染[View]时与传统方式无差异，同样支持硬件加速，并且在主线程执行
  * 但是他不是一个[ViewGroup]，因为实际的[View]是在另[Presentation]的[android.view.Window]中渲染的
