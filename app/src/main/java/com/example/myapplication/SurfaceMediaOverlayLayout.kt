@@ -137,6 +137,14 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
         private var mRenderThreadHandler: Handler? = null
         private val mPreparedToDraw = arrayOfNulls<WeakReference<View>>(1)
 
+        private fun lockSupportedCanvas(): Canvas? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                holder.lockHardwareCanvas()
+            } else {
+                holder.lockCanvas()
+            }
+        }
+
         init {
             holder.setFormat(PixelFormat.TRANSPARENT)
             holder.addCallback(object : SurfaceHolder.Callback {
@@ -150,13 +158,11 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                             when (msg.what) {
                                 MSG_DROP_FIRST -> {
                                     try {
-                                        val canvas =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                holder.lockHardwareCanvas()
-                                            } else {
-                                                holder.lockCanvas()
-                                            }
-                                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+                                        val canvas = lockSupportedCanvas() ?: return
+                                        canvas.drawColor(
+                                            Color.TRANSPARENT,
+                                            PorterDuff.Mode.CLEAR
+                                        )
                                         holder.unlockCanvasAndPost(canvas)
                                     } catch (e: Throwable) {
                                         Log.e(TAG, "draw error", e)
@@ -170,12 +176,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                                         view
                                     } ?: return
                                     try {
-                                        val canvas =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                holder.lockHardwareCanvas()
-                                            } else {
-                                                holder.lockCanvas()
-                                            }
+                                        val canvas = lockSupportedCanvas() ?: return
                                         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
                                         targetView.draw(canvas)
                                         holder.unlockCanvasAndPost(canvas)
