@@ -30,7 +30,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
     private val mContent: View
     private val mRenderLayer = RenderLayer(context)
-    private val mTakeCaptureDelegate: View
+    private val mRenderTrigger: View
 
     var isUseSurfaceRenderLayer: Boolean
         get() = mRenderLayer.visibility == View.VISIBLE
@@ -69,7 +69,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                 LayoutParams.MATCH_PARENT
             )
         )
-        mTakeCaptureDelegate = object : View(context) {
+        mRenderTrigger = object : View(context) {
             init {
                 setWillNotDraw(false)
             }
@@ -84,7 +84,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
             }
         }
         addView(
-            mTakeCaptureDelegate,
+            mRenderTrigger,
             LayoutParams(
                 0,
                 0
@@ -118,8 +118,8 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
     override fun onDescendantInvalidated(child: View, target: View) {
         super.onDescendantInvalidated(child, target)
-        if (isUseSurfaceRenderLayer && mRenderLayer != child && mTakeCaptureDelegate != child) {
-            mTakeCaptureDelegate.invalidate()
+        if (isUseSurfaceRenderLayer && mRenderLayer != child && mRenderTrigger != child) {
+            mRenderTrigger.invalidate()
         }
     }
 
