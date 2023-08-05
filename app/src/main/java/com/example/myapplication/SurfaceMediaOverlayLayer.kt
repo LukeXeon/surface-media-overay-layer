@@ -16,6 +16,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 
+/**
+ * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
+ * 可以用作播放视频时的中间叠层
+ * 使用[Presentation]和[VirtualDisplay]实现
+ * 在渲染[View]时传统方式无差异，同样支持硬件加速，并且在主线程执行
+ * 但是他不是一个[ViewGroup]，因为实际的[View]是在另一个[android.view.Window]渲染的
+ * 需要访问渲染的内容时，使用[contentView]和[setContentView]
+ * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : SurfaceView(context, attrs, defStyleAttr) {
@@ -32,23 +40,19 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             )
         }
     }
-    private var mRenderer: PresentationRenderer? = null
+    private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val contentView: View
         get() = mContentView
+
     fun setContentView(view: View) {
         mContentView.removeAllViews()
         mContentView.addView(view)
     }
 
-    private data class PresentationRenderer(
+    private data class VirtualDisplayPresentation(
         val virtualDisplay: VirtualDisplay,
         val presentation: Presentation
     )
-
-    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
-        return mContentView.dispatchTouchEvent(event)
-    }
-
 
     init {
         val array = context.obtainStyledAttributes(
@@ -65,9 +69,10 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 mContentView, true
             )
         }
-        val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
+                val displayManager =
+                    context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                 val virtualDisplay = displayManager.createVirtualDisplay(
                     TAG,
                     width,
@@ -83,7 +88,8 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 presentation.setContentView(mContentView)
                 presentation.show()
                 presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-                mRenderer = PresentationRenderer(virtualDisplay, presentation)
+                mVirtualDisplayPresentation =
+                    VirtualDisplayPresentation(virtualDisplay, presentation)
             }
 
             override fun surfaceChanged(
@@ -92,7 +98,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                val renderer = mRenderer ?: return
+                val renderer = mVirtualDisplayPresentation ?: return
                 renderer.virtualDisplay.resize(
                     width,
                     height,
@@ -101,7 +107,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
-                val renderer = mRenderer ?: return
+                val renderer = mVirtualDisplayPresentation ?: return
                 renderer.presentation.dismiss()
                 renderer.virtualDisplay.release()
                 val parent = mContentView.parent
@@ -113,9 +119,13 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         })
     }
 
+    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
+        return mContentView.dispatchTouchEvent(event)
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
-        val renderer = mRenderer
+        val renderer = mVirtualDisplayPresentation
         if (renderer != null && newConfig != null) {
             renderer.virtualDisplay.resize(
                 width,
