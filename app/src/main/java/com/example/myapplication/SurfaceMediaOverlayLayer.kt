@@ -136,6 +136,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 if (parent is ViewGroup) {
                     parent.removeView(mContainerView)
                 }
+                mVirtualDisplayPresentation = null
             }
         })
     }
