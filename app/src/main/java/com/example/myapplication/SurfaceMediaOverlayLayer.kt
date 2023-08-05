@@ -4,6 +4,7 @@ import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -69,6 +70,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 mContentView, true
             )
         }
+        holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 val displayManager =
