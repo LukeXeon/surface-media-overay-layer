@@ -24,8 +24,9 @@ import androidx.core.view.NestedScrollingParent3
  * 可以用作播放视频时视频层和弹幕层之间的中间叠层
  * 使用[Presentation]和[VirtualDisplay]实现
  * 在渲染[View]时与传统方式无差异，同样支持硬件加速，并且在主线程执行
- * 但是他不是一个[ViewGroup]，因为实际的[View]是在另一个[android.view.Window]渲染的
+ * 但是他不是一个[ViewGroup]，因为实际的[View]是在另[Presentation]的[android.view.Window]中渲染的
  * 需要访问渲染的内容时，使用[containerView]和[setContentView]
+ * 注：[Presentation]是一种特殊的[android.app.Dialog]，他允许你指定他渲染到的[android.view.Surface]
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
