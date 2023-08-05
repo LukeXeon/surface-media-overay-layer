@@ -8,6 +8,9 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -16,8 +19,6 @@ import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.core.view.NestedScrollingChild3
-import androidx.core.view.NestedScrollingParent3
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -35,6 +36,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     companion object {
         private const val TAG = "SurfaceMediaOverlay"
+        private const val MSH_POST_DISMISS = 101
     }
 
     private data class VirtualDisplayPresentation(
@@ -53,6 +55,17 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         }
     }
 
+    private class EventHandler : Handler(Looper.myLooper()!!) {
+        override fun handleMessage(msg: Message) {
+            if (msg.what == MSH_POST_DISMISS) {
+                val presentation = msg.obj as VirtualDisplayPresentation
+                presentation.presentation.dismiss()
+                presentation.virtualDisplay.release()
+            }
+        }
+    }
+
+    private val mHandler = EventHandler()
     private val mContainerView = ContainerView(this)
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: ViewGroup
@@ -108,8 +121,8 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                val renderer = mVirtualDisplayPresentation ?: return
-                renderer.virtualDisplay.resize(
+                val presentation = mVirtualDisplayPresentation ?: return
+                presentation.virtualDisplay.resize(
                     width,
                     height,
                     context.resources.displayMetrics.densityDpi
@@ -117,15 +130,13 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
-                val renderer = mVirtualDisplayPresentation ?: return
-                renderer.presentation.dismiss()
-                renderer.virtualDisplay.release()
+                val presentation = mVirtualDisplayPresentation ?: return
+                mHandler.obtainMessage(MSH_POST_DISMISS, presentation).sendToTarget()
                 val parent = mContainerView.parent
                 if (parent is ViewGroup) {
                     parent.removeView(mContainerView)
                 }
             }
-
         })
     }
 
