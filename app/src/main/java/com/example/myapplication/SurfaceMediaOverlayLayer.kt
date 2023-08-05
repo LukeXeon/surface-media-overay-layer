@@ -36,7 +36,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     companion object {
         private const val TAG = "SurfaceMediaOverlay"
-        private const val MSH_POST_DISMISS = 101
+        private const val MSG_POST_DISMISS = 101
     }
 
     private data class VirtualDisplayPresentation(
@@ -57,7 +57,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     private class EventHandler : Handler(Looper.myLooper()!!) {
         override fun handleMessage(msg: Message) {
-            if (msg.what == MSH_POST_DISMISS) {
+            if (msg.what == MSG_POST_DISMISS) {
                 val presentation = msg.obj as VirtualDisplayPresentation
                 presentation.presentation.dismiss()
                 presentation.virtualDisplay.release()
@@ -131,7 +131,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 val presentation = mVirtualDisplayPresentation ?: return
-                mHandler.obtainMessage(MSH_POST_DISMISS, presentation).sendToTarget()
+                mHandler.obtainMessage(MSG_POST_DISMISS, presentation).sendToTarget()
                 val parent = mContainerView.parent
                 if (parent is ViewGroup) {
                     parent.removeView(mContainerView)
