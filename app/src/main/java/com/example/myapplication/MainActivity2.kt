@@ -5,7 +5,6 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import java.util.UUID
 
 class MainActivity2 : AppCompatActivity() {
 
@@ -18,8 +17,9 @@ class MainActivity2 : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val imageView = findViewById<ImageView>(R.id.image)
-        val button = findViewById<Button>(R.id.button)
+        val surface = findViewById<SurfaceMediaOverlayLayer>(R.id.surface)
+        val imageView = surface.contentView.findViewById<ImageView>(R.id.image)
+        val button = surface.contentView.findViewById<Button>(R.id.button)
         button.isClickable = true
         imageView.isClickable = true
         DragViewUtil.registerDragAction(button)

@@ -3,7 +3,7 @@
 
     <style name="Theme.MyApplication" parent="Theme.AppCompat" />
 
-    <declare-styleable name="SurfaceMediaOverlayLayout">
+    <declare-styleable name="SurfaceMediaOverlayLayer">
         <attr name="layout" format="reference" />
     </declare-styleable>
 </resources>
