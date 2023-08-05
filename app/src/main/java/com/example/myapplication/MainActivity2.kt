@@ -5,7 +5,6 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import kotlin.random.Random
 
 class MainActivity2 : AppCompatActivity() {
 
@@ -19,8 +18,8 @@ class MainActivity2 : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val surface = findViewById<SurfaceMediaOverlayLayer>(R.id.surface)
-        val imageView = surface.contentView.findViewById<ImageView>(R.id.image)
-        val button = surface.contentView.findViewById<Button>(R.id.button)
+        val imageView = surface.containerView.findViewById<ImageView>(R.id.image)
+        val button = surface.containerView.findViewById<Button>(R.id.button)
         button.isClickable = true
         imageView.isClickable = true
         Glide.with(imageView)

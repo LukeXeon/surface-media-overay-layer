@@ -16,6 +16,8 @@ import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.view.NestedScrollingChild3
+import androidx.core.view.NestedScrollingParent3
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -23,7 +25,7 @@ import android.widget.FrameLayout
  * 使用[Presentation]和[VirtualDisplay]实现
  * 在渲染[View]时传统方式无差异，同样支持硬件加速，并且在主线程执行
  * 但是他不是一个[ViewGroup]，因为实际的[View]是在另一个[android.view.Window]渲染的
- * 需要访问渲染的内容时，使用[contentView]和[setContentView]
+ * 需要访问渲染的内容时，使用[containerView]和[setContentView]
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -33,21 +35,22 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         private const val TAG = "SurfaceMediaOverlay"
     }
 
-    private val mContentView = object : FrameLayout(context) {
-        override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
-            super.requestDisallowInterceptTouchEvent(disallowIntercept)
-            this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
-                disallowIntercept
-            )
+    private val mContainerView =
+        object : FrameLayout(context) {
+            override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+                super.requestDisallowInterceptTouchEvent(disallowIntercept)
+                this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
+                    disallowIntercept
+                )
+            }
         }
-    }
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
-    val contentView: View
-        get() = mContentView
+    val containerView: View
+        get() = mContainerView
 
     fun setContentView(view: View) {
-        mContentView.removeAllViews()
-        mContentView.addView(view)
+        mContainerView.removeAllViews()
+        mContainerView.addView(view)
     }
 
     private data class VirtualDisplayPresentation(
@@ -67,7 +70,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         if (layoutId != NO_ID) {
             LayoutInflater.from(context).inflate(
                 layoutId,
-                mContentView, true
+                mContainerView, true
             )
         }
         holder.setFormat(PixelFormat.TRANSPARENT)
@@ -87,7 +90,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     context,
                     virtualDisplay.display
                 )
-                presentation.setContentView(mContentView)
+                presentation.setContentView(mContainerView)
                 presentation.show()
                 presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 mVirtualDisplayPresentation =
@@ -112,9 +115,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 val renderer = mVirtualDisplayPresentation ?: return
                 renderer.presentation.dismiss()
                 renderer.virtualDisplay.release()
-                val parent = mContentView.parent
+                val parent = mContainerView.parent
                 if (parent is ViewGroup) {
-                    parent.removeView(mContentView)
+                    parent.removeView(mContainerView)
                 }
             }
 
@@ -122,7 +125,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     }
 
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
-        return mContentView.dispatchTouchEvent(event)
+        return mContainerView.dispatchTouchEvent(event)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
