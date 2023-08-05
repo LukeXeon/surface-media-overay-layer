@@ -21,6 +21,7 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
+import androidx.appcompat.content.res.AppCompatResources
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -119,7 +120,12 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 )
                 presentation.requestWindowFeature(Window.FEATURE_NO_TITLE)
                 presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-                presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                presentation.window?.setBackgroundDrawable(
+                    AppCompatResources.getDrawable(
+                        context,
+                        android.R.color.transparent
+                    )
+                )
                 presentation.setCancelable(false)
                 presentation.setContentView(mContainerView)
                 presentation.show()
