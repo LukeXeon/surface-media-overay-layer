@@ -63,7 +63,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
          * 这里要异步销毁否则会崩在系统里（这咖喱味的代码...）
          * */
         fun dismiss() {
-            mHandler.obtainMessage(MSG_POST_DISMISS, presentation).sendToTarget()
+            mHandler.sendEmptyMessage(MSG_POST_DISMISS)
         }
     }
 
