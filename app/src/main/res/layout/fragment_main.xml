@@ -7,6 +7,7 @@
     android:layout_height="match_parent">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll2"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -32,6 +33,12 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:text="asdasdasdasd" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#948CFF" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
