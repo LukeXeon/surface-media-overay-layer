@@ -27,7 +27,7 @@ import androidx.core.view.NestedScrollingParent3
  * 但是他不是一个[ViewGroup]，因为实际的[View]是在另[Presentation]的[android.view.Window]中渲染的
  * 需要访问渲染的内容时，使用[containerView]和[setContentView]
  * 注：[Presentation]是一种特殊的[android.app.Dialog]，他允许你指定他渲染到的[android.view.Surface]
- * 已知问题：在模拟器上他与overScroll有冲突，请设置外侧可滑动布局android:overScrollMode="never"
+ * 已知问题：在部分模拟器上他与overScroll有冲突，请设置外侧可滑动布局android:overScrollMode="never"
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
