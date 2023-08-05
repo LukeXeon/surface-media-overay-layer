@@ -18,6 +18,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 
 /**
@@ -109,7 +110,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     virtualDisplay.display
                 )
                 presentation.setContentView(mContainerView)
+                presentation.setCancelable(false)
                 presentation.show()
+                presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
                 presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 mVirtualDisplayPresentation =
                     VirtualDisplayPresentation(virtualDisplay, presentation)
