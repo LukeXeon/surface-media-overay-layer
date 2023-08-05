@@ -53,7 +53,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     private val mContainerView = ContainerView(this)
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
-    val containerView: View
+    val containerView: ViewGroup
         get() = mContainerView
 
     fun setContentView(view: View) {
