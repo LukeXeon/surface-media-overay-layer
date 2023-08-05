@@ -56,7 +56,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         }
     }
 
-    private class EventHandler : Handler(Looper.myLooper()!!) {
+    private val mHandler = object : Handler(Looper.myLooper()!!) {
         override fun handleMessage(msg: Message) {
             if (msg.what == MSG_POST_DISMISS) {
                 val presentation = msg.obj as VirtualDisplayPresentation
@@ -65,8 +65,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
         }
     }
-
-    private val mHandler = EventHandler()
     private val mContainerView = ContainerView(this)
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: ViewGroup
