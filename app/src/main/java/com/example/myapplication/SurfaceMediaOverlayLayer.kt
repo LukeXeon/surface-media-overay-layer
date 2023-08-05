@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -42,6 +43,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
 
     companion object {
+        private const val TAG = "SurfaceMediaOverlayLaye"
         private const val MSG_POST_DISMISS = 101
     }
 
@@ -474,6 +476,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         type: Int,
         consumed: IntArray
     ) {
+
         mChildHelper.dispatchNestedScroll(
             dxConsumed,
             dyConsumed,
