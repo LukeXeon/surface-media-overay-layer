@@ -45,17 +45,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         val presentation: Presentation
     )
 
-    private class ContainerView(
-        private val renderLayer: SurfaceMediaOverlayLayer
-    ) : FrameLayout(renderLayer.context) {
-        override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
-            super.requestDisallowInterceptTouchEvent(disallowIntercept)
-            renderLayer.parent.requestDisallowInterceptTouchEvent(
-                disallowIntercept
-            )
-        }
-    }
-
     private val mHandler = object : Handler(Looper.myLooper()!!) {
         override fun handleMessage(msg: Message) {
             if (msg.what == MSG_POST_DISMISS) {
@@ -65,7 +54,14 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
         }
     }
-    private val mContainerView = ContainerView(this)
+    private val mContainerView = object : FrameLayout(context) {
+        override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+            super.requestDisallowInterceptTouchEvent(disallowIntercept)
+            this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
+                disallowIntercept
+            )
+        }
+    }
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: ViewGroup
         get() = mContainerView
@@ -132,6 +128,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 val presentation = mVirtualDisplayPresentation ?: return
+                /**
+                 * 这里要异步销毁否则会崩在系统里（这咖喱味的代码...）
+                 * */
                 mHandler.obtainMessage(MSG_POST_DISMISS, presentation).sendToTarget()
                 val parent = mContainerView.parent
                 if (parent is ViewGroup) {
