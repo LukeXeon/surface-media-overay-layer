@@ -146,9 +146,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
-        val renderer = mVirtualDisplayPresentation
-        if (renderer != null && newConfig != null) {
-            renderer.virtualDisplay.resize(
+        val presentation = mVirtualDisplayPresentation
+        if (presentation != null && newConfig != null) {
+            presentation.virtualDisplay.resize(
                 width,
                 height,
                 context.resources.displayMetrics.densityDpi
