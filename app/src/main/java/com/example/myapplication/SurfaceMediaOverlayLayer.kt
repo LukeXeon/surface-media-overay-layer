@@ -76,7 +76,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     private class ContainerView(private val renderLayer: SurfaceMediaOverlayLayer) :
         FrameLayout(renderLayer.context),
-        NestedScrollingChild3,
         NestedScrollingParent3 {
 
         private val mParentHelper = NestedScrollingParentHelper(this)
@@ -87,123 +86,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 disallowIntercept
             )
         }
-
-        // --------------NestedScrollingChild-----------
-
-        override fun setNestedScrollingEnabled(enabled: Boolean) {
-            renderLayer.isNestedScrollingEnabled = enabled
-        }
-
-        override fun isNestedScrollingEnabled(): Boolean {
-            return renderLayer.isNestedScrollingEnabled
-        }
-
-        override fun startNestedScroll(axes: Int, type: Int): Boolean {
-            return renderLayer.startNestedScroll(axes, type)
-        }
-
-        override fun startNestedScroll(axes: Int): Boolean {
-            return renderLayer.startNestedScroll(axes)
-        }
-
-        override fun stopNestedScroll(type: Int) {
-            renderLayer.stopNestedScroll(type)
-        }
-
-        override fun stopNestedScroll() {
-            renderLayer.stopNestedScroll()
-        }
-
-        override fun hasNestedScrollingParent(type: Int): Boolean {
-            return renderLayer.hasNestedScrollingParent(type)
-        }
-
-        override fun hasNestedScrollingParent(): Boolean {
-            return renderLayer.hasNestedScrollingParent()
-        }
-
-        override fun dispatchNestedScroll(
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int,
-            offsetInWindow: IntArray?,
-            type: Int,
-            consumed: IntArray
-        ) {
-            renderLayer.dispatchNestedScroll(
-                dxConsumed,
-                dyConsumed,
-                dxUnconsumed,
-                dyUnconsumed,
-                offsetInWindow
-            )
-        }
-
-        override fun dispatchNestedScroll(
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int,
-            offsetInWindow: IntArray?,
-            type: Int
-        ): Boolean {
-            return renderLayer.dispatchNestedScroll(
-                dxConsumed,
-                dyConsumed,
-                dxUnconsumed,
-                dyUnconsumed,
-                offsetInWindow
-            )
-        }
-
-        override fun dispatchNestedScroll(
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int,
-            offsetInWindow: IntArray?
-        ): Boolean {
-            return renderLayer.dispatchNestedScroll(
-                dxConsumed,
-                dyConsumed,
-                dxUnconsumed,
-                dyUnconsumed,
-                offsetInWindow
-            )
-        }
-
-        override fun dispatchNestedPreScroll(
-            dx: Int,
-            dy: Int,
-            consumed: IntArray?,
-            offsetInWindow: IntArray?,
-            type: Int
-        ): Boolean {
-            return renderLayer.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, type)
-        }
-
-        override fun dispatchNestedPreScroll(
-            dx: Int,
-            dy: Int,
-            consumed: IntArray?,
-            offsetInWindow: IntArray?
-        ): Boolean {
-            return renderLayer.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow)
-        }
-
-        override fun dispatchNestedFling(
-            velocityX: Float,
-            velocityY: Float,
-            consumed: Boolean
-        ): Boolean {
-            return renderLayer.dispatchNestedFling(velocityX, velocityY, consumed)
-        }
-
-        override fun dispatchNestedPreFling(velocityX: Float, velocityY: Float): Boolean {
-            return renderLayer.dispatchNestedPreFling(velocityX, velocityY)
-        }
-
         // --------------NestedScrollingParent-----------
 
         override fun onStartNestedScroll(
@@ -222,7 +104,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
         override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
             mParentHelper.onNestedScrollAccepted(child, target, axes, type)
-            startNestedScroll(axes, type)
+            renderLayer.startNestedScroll(axes, type)
         }
 
         override fun onNestedScrollAccepted(child: View, target: View, axes: Int) {
@@ -231,7 +113,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
         override fun onStopNestedScroll(target: View, type: Int) {
             mParentHelper.onStopNestedScroll(target, type)
-            stopNestedScroll(type)
+            renderLayer.stopNestedScroll(type)
         }
 
         override fun onStopNestedScroll(target: View) {
@@ -247,7 +129,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             type: Int,
             consumed: IntArray
         ) {
-            dispatchNestedScroll(
+            renderLayer.dispatchNestedScroll(
                 0,
                 0,
                 dxUnconsumed,
@@ -301,7 +183,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             consumed: IntArray,
             type: Int
         ) {
-            dispatchNestedPreScroll(dx, dy, consumed, null, type)
+            renderLayer.dispatchNestedPreScroll(dx, dy, consumed, null, type)
         }
 
         override fun onNestedPreScroll(target: View, dx: Int, dy: Int, consumed: IntArray) {
