@@ -9,6 +9,7 @@ import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
@@ -23,13 +24,31 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         private const val TAG = "SurfaceMediaOverlay"
     }
 
-    val contentView: View
+    private val mContentView = object : FrameLayout(context) {
+        override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+            super.requestDisallowInterceptTouchEvent(disallowIntercept)
+            this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
+                disallowIntercept
+            )
+        }
+    }
     private var mRenderer: PresentationRenderer? = null
+    val contentView: View
+        get() = mContentView
+    fun setContentView(view: View) {
+        mContentView.removeAllViews()
+        mContentView.addView(view)
+    }
 
     private data class PresentationRenderer(
         val virtualDisplay: VirtualDisplay,
         val presentation: Presentation
     )
+
+    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
+        return mContentView.dispatchTouchEvent(event)
+    }
+
 
     init {
         val array = context.obtainStyledAttributes(
@@ -38,18 +57,13 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             defStyleAttr,
             0
         )
-        try {
-            val id = array.getResourceId(R.styleable.SurfaceMediaOverlayLayer_layout, NO_ID)
-            contentView = if (id != NO_ID) {
-                LayoutInflater.from(context).inflate(
-                    id,
-                    FrameLayout(context), false
-                )
-            } else {
-                throw IllegalArgumentException("no layout id")
-            }
-        } finally {
-            array.recycle()
+        val layoutId = array.getResourceId(R.styleable.SurfaceMediaOverlayLayer_layout, NO_ID)
+        array.recycle()
+        if (layoutId != NO_ID) {
+            LayoutInflater.from(context).inflate(
+                layoutId,
+                mContentView, true
+            )
         }
         val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         holder.addCallback(object : SurfaceHolder.Callback {
@@ -66,7 +80,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     context,
                     virtualDisplay.display
                 )
-                presentation.setContentView(contentView)
+                presentation.setContentView(mContentView)
                 presentation.show()
                 presentation.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 mRenderer = PresentationRenderer(virtualDisplay, presentation)
@@ -90,9 +104,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 val renderer = mRenderer ?: return
                 renderer.presentation.dismiss()
                 renderer.virtualDisplay.release()
-                val parent = contentView.parent
+                val parent = mContentView.parent
                 if (parent is ViewGroup) {
-                    parent.removeView(contentView)
+                    parent.removeView(mContentView)
                 }
             }
 

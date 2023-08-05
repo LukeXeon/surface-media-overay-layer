@@ -20,10 +20,11 @@ class MainActivity2 : AppCompatActivity() {
         val surface = findViewById<SurfaceMediaOverlayLayer>(R.id.surface)
         val imageView = surface.contentView.findViewById<ImageView>(R.id.image)
         val button = surface.contentView.findViewById<Button>(R.id.button)
+        surface.contentView.setOnClickListener {
+            println("asdasdasd")
+        }
         button.isClickable = true
-        surface.isClickable = true
         imageView.isClickable = true
-        DragViewUtil.registerDragAction(surface)
         Glide.with(imageView)
             .asGif()
             .load(URL)
