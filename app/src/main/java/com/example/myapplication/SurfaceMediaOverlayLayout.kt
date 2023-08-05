@@ -4,11 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Picture
 import android.graphics.PixelFormat
-import android.graphics.Point
 import android.graphics.PorterDuff
-import android.graphics.RecordingCanvas
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
@@ -16,13 +13,12 @@ import android.os.Message
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.PixelCopy
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.util.Pools
 import androidx.core.view.children
+import java.lang.ref.WeakReference
 
 class SurfaceMediaOverlayLayout @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -35,6 +31,12 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
     private val mContent: View
     private val mRenderLayer = RenderLayer(context)
     private val mTakeCaptureDelegate: View
+
+    var isUseSurfaceRenderLayer: Boolean
+        get() = mRenderLayer.visibility == View.VISIBLE
+        set(value) {
+            mRenderLayer.visibility = if (value) View.VISIBLE else View.GONE
+        }
 
     init {
         val array = context.obtainStyledAttributes(
@@ -74,7 +76,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
             @SuppressLint("MissingSuperCall")
             override fun draw(canvas: Canvas) {
-                mRenderLayer.takeCapture(mContent)
+                mRenderLayer.notifyViewUpdated(mContent)
             }
 
             override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -116,10 +118,11 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
     override fun onDescendantInvalidated(child: View, target: View) {
         super.onDescendantInvalidated(child, target)
-        if (mRenderLayer != child && mTakeCaptureDelegate != child) {
+        if (isUseSurfaceRenderLayer && mRenderLayer != child && mTakeCaptureDelegate != child) {
             mTakeCaptureDelegate.invalidate()
         }
     }
+
 
     private class RenderLayer constructor(
         context: Context,
@@ -127,17 +130,12 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
         companion object {
             private const val MSG_DROP_FIRST = 101
-            private const val MSG_DRAW_PICTURE = 102
+            private const val MSG_DRAW_VIEW = 102
         }
 
-        private class Snapshot {
-            val position = Point()
-            val picture = Picture()
-        }
 
         private var mRenderThreadHandler: Handler? = null
-        private val mPreparedPool = Pools.SynchronizedPool<Snapshot>(1)
-        private val mBackupPool = Pools.SynchronizedPool<Snapshot>(2)
+        private val mPreparedToDraw = arrayOfNulls<WeakReference<View>>(1)
 
         init {
             holder.setFormat(PixelFormat.TRANSPARENT)
@@ -165,8 +163,12 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                                     }
                                 }
 
-                                MSG_DRAW_PICTURE -> {
-                                    val snapshot = mPreparedPool.acquire() ?: return
+                                MSG_DRAW_VIEW -> {
+                                    val targetView = synchronized(mPreparedToDraw) {
+                                        val view = mPreparedToDraw[0]?.get()
+                                        mPreparedToDraw[0] = null
+                                        view
+                                    } ?: return
                                     try {
                                         val canvas =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -175,16 +177,10 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                                                 holder.lockCanvas()
                                             }
                                         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-                                        canvas.translate(
-                                            snapshot.position.x.toFloat(),
-                                            snapshot.position.y.toFloat(),
-                                        )
-                                        canvas.drawPicture(snapshot.picture)
+                                        targetView.draw(canvas)
                                         holder.unlockCanvasAndPost(canvas)
                                     } catch (e: Throwable) {
                                         Log.e(TAG, "draw error", e)
-                                    } finally {
-                                        mBackupPool.release(snapshot)
                                     }
                                 }
                             }
@@ -210,16 +206,15 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
             })
         }
 
-        fun takeCapture(view: View): Boolean {
+        fun notifyViewUpdated(view: View): Boolean {
             val renderThreadHandler = mRenderThreadHandler
             if (renderThreadHandler != null) {
-                val snapshot = mPreparedPool.acquire() ?: mBackupPool.acquire() ?: Snapshot()
-                snapshot.position.set(view.left, view.top)
-                val canvas = snapshot.picture.beginRecording(view.width, view.height)
-                view.draw(canvas)
-                snapshot.picture.endRecording()
-                mPreparedPool.release(snapshot)
-                renderThreadHandler.sendEmptyMessage(MSG_DRAW_PICTURE)
+                synchronized(mPreparedToDraw) {
+                    if (mPreparedToDraw[0]?.get() != view) {
+                        mPreparedToDraw[0] = WeakReference(view)
+                    }
+                }
+                renderThreadHandler.sendEmptyMessage(MSG_DRAW_VIEW)
                 return true
             }
             return false
