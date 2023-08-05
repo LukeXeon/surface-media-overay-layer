@@ -40,20 +40,33 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         private const val MSG_POST_DISMISS = 101
     }
 
-    private data class VirtualDisplayPresentation(
-        val virtualDisplay: VirtualDisplay,
-        val presentation: Presentation
-    )
-
-    private val mHandler = object : Handler(Looper.myLooper()!!) {
-        override fun handleMessage(msg: Message) {
-            if (msg.what == MSG_POST_DISMISS) {
-                val presentation = msg.obj as VirtualDisplayPresentation
-                presentation.presentation.dismiss()
-                presentation.virtualDisplay.release()
+    private class VirtualDisplayPresentation(
+        private val virtualDisplay: VirtualDisplay,
+        private val presentation: Presentation
+    ) {
+        private val mHandler = object : Handler(Looper.myLooper()!!) {
+            override fun handleMessage(msg: Message) {
+                if (msg.what == MSG_POST_DISMISS) {
+                    presentation.dismiss()
+                    virtualDisplay.release()
+                }
             }
         }
+
+        fun resize(width: Int, height: Int, densityDpi: Int) {
+            virtualDisplay.resize(width, height, densityDpi)
+        }
+
+
+        /**
+         * 这里要异步销毁否则会崩在系统里（这咖喱味的代码...）
+         * */
+        fun dismiss() {
+            mHandler.obtainMessage(MSG_POST_DISMISS, presentation).sendToTarget()
+        }
     }
+
+
     private val mContainerView = object : FrameLayout(context) {
         override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
             super.requestDisallowInterceptTouchEvent(disallowIntercept)
@@ -119,7 +132,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 height: Int
             ) {
                 val presentation = mVirtualDisplayPresentation ?: return
-                presentation.virtualDisplay.resize(
+                presentation.resize(
                     width,
                     height,
                     context.resources.displayMetrics.densityDpi
@@ -128,10 +141,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 val presentation = mVirtualDisplayPresentation ?: return
-                /**
-                 * 这里要异步销毁否则会崩在系统里（这咖喱味的代码...）
-                 * */
-                mHandler.obtainMessage(MSG_POST_DISMISS, presentation).sendToTarget()
+                presentation.dismiss()
                 val parent = mContainerView.parent
                 if (parent is ViewGroup) {
                     parent.removeView(mContainerView)
@@ -149,7 +159,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         super.onConfigurationChanged(newConfig)
         val presentation = mVirtualDisplayPresentation
         if (presentation != null && newConfig != null) {
-            presentation.virtualDisplay.resize(
+            presentation.resize(
                 width,
                 height,
                 context.resources.displayMetrics.densityDpi
