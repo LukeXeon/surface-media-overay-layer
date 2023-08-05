@@ -135,7 +135,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
 
         private var mRenderThreadHandler: Handler? = null
-        private val mPreparedToDraw = arrayOfNulls<WeakReference<View>>(1)
+        private val mPreparedToDraw = arrayOfNulls<View>(1)
 
         private fun lockSupportedCanvas(): Canvas? {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -171,7 +171,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
 
                                 MSG_DRAW_VIEW -> {
                                     val targetView = synchronized(mPreparedToDraw) {
-                                        val view = mPreparedToDraw[0]?.get()
+                                        val view = mPreparedToDraw[0]
                                         mPreparedToDraw[0] = null
                                         view
                                     } ?: return
@@ -201,6 +201,9 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
                 }
 
                 override fun surfaceDestroyed(holder: SurfaceHolder) {
+                    synchronized(mPreparedToDraw) {
+                        mPreparedToDraw[0] = null
+                    }
                     mRenderThreadHandler?.looper?.quit()
                     mRenderThreadHandler = null
                 }
@@ -211,9 +214,7 @@ class SurfaceMediaOverlayLayout @JvmOverloads constructor(
             val renderThreadHandler = mRenderThreadHandler
             if (renderThreadHandler != null) {
                 synchronized(mPreparedToDraw) {
-                    if (mPreparedToDraw[0]?.get() != view) {
-                        mPreparedToDraw[0] = WeakReference(view)
-                    }
+                    mPreparedToDraw[0] = view
                 }
                 renderThreadHandler.sendEmptyMessage(MSG_DRAW_VIEW)
                 return true
