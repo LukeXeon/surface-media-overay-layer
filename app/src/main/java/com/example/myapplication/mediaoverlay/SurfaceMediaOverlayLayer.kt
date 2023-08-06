@@ -75,8 +75,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     height,
                     context.resources.configuration.densityDpi,
                 )
-                invalidate()
-                mContainerView.invalidate()
             }
         }
 
