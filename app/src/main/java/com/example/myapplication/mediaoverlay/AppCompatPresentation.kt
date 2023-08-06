@@ -40,7 +40,7 @@ open class AppCompatPresentation(
     val display: Display
 ) : Dialog(
     createPresentationContext(outerContext, display),
-    R.style.myDialogTheme
+    R.style.AppCompat_Presentation
 ) {
     private val mHandler = Handler(
         requireNotNull(

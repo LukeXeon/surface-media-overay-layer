@@ -7,7 +7,7 @@
         <attr name="layout" format="reference" />
     </declare-styleable>
 
-    <style name="myDialogTheme" parent="android:Theme.Dialog">
+    <style name="AppCompat.Presentation" parent="android:Theme.Material.NoActionBar.Fullscreen">
         <item name="android:windowFrame">@null</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowNoTitle">true</item><!--除去title-->
