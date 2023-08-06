@@ -4,6 +4,7 @@ import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Handler
@@ -63,8 +64,8 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         }
         private val mVirtualDisplay = mDisplayManager.createVirtualDisplay(
             this@SurfaceMediaOverlayLayer.toString(),
-            width,
-            height,
+            context.resources.displayMetrics.widthPixels,
+            context.resources.displayMetrics.heightPixels,
             context.resources.displayMetrics.densityDpi,
             holder.surface,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
@@ -82,8 +83,8 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         fun resize() {
             if (mVirtualDisplay.surface != null) {
                 mVirtualDisplay.resize(
-                    width,
-                    height,
+                    context.resources.displayMetrics.widthPixels,
+                    context.resources.displayMetrics.heightPixels,
                     context.resources.displayMetrics.densityDpi
                 )
             }
@@ -108,7 +109,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         @Suppress("DEPRECATION")
         private fun createNewPresentation(): Presentation {
             val presentation = Presentation(
-                context,
+                context.createDisplayContext(mVirtualDisplay.display),
                 mVirtualDisplay.display
             )
             presentation.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -178,8 +179,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                val presentation = mVirtualDisplayPresentation ?: return
-                presentation.resize()
+
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
