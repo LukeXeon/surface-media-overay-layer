@@ -122,18 +122,6 @@ open class AppCompatPresentation(
         w.attributes = attr
         w.setGravity(Gravity.FILL)
         w.setType(WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION)
-        w.decorView.setPadding(0)
-        w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
-        w.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            w.setBackgroundBlurRadius(0)
-        }
-        @Suppress("LeakingThis")
-        setCanceledOnTouchOutside(false)
     }
 
     companion object {
