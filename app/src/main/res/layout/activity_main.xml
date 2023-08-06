@@ -23,6 +23,13 @@
                 android:layout_height="wrap_content"
                 app:layout_scrollFlags="scroll">
 
+                <com.example.myapplication.mediaoverlay.SurfaceMediaOverlayLayer
+                    android:id="@+id/surface"
+                    android:layout_width="match_parent"
+                    android:layout_height="500dp"
+                    app:layout="@layout/fragment_main"
+                    app:layout_collapseMode="parallax" />
+
                 <androidx.appcompat.widget.Toolbar
                     android:layout_width="match_parent"
                     android:layout_height="100dp"
@@ -50,11 +57,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1000dp">
 
-                    <com.example.myapplication.mediaoverlay.SurfaceMediaOverlayLayer
-                        android:id="@+id/surface"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        app:layout="@layout/fragment_main" />
+
                 </FrameLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
