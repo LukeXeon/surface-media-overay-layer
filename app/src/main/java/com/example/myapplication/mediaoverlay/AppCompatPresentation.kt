@@ -22,17 +22,13 @@ import android.content.res.Resources
 import android.hardware.display.DisplayManager
 import android.hardware.display.DisplayManager.DisplayListener
 import android.os.Binder
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Display
 import android.view.Gravity
-import android.view.ViewGroup
-import android.view.Window
 import android.view.WindowManager
 import androidx.core.content.getSystemService
-import androidx.core.view.setPadding
 import com.example.myapplication.R
 
 open class AppCompatPresentation(
