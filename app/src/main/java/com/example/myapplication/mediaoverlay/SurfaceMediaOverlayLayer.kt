@@ -131,7 +131,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             )
         }
         holder.setFormat(PixelFormat.TRANSPARENT)
-        holder.addCallback(object : SurfaceHolder.Callback {
+        holder.addCallback(object : SurfaceHolder.Callback2 {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 mVirtualDisplayPresentation = VirtualDisplayPresentation()
             }
@@ -149,6 +149,10 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 val presentation = mVirtualDisplayPresentation ?: return
                 presentation.dispose()
                 mVirtualDisplayPresentation = null
+            }
+
+            override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
+                mContainerView.invalidate()
             }
         })
     }
