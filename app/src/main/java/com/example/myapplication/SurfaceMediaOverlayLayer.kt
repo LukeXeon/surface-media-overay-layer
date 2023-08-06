@@ -10,7 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.AttributeSet
-import android.util.Log
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -20,12 +20,9 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Space
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.view.NestedScrollingChild3
 import androidx.core.view.NestedScrollingChildHelper
-import androidx.core.view.NestedScrollingParent3
-import androidx.core.view.NestedScrollingParentHelper
-import androidx.core.view.ViewCompat
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -39,181 +36,111 @@ import androidx.core.view.ViewCompat
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : SurfaceView(context, attrs, defStyleAttr), NestedScrollingChild3 {
+) : SurfaceView(context, attrs, defStyleAttr) {
 
+    private inner class VirtualDisplayPresentation {
+        private val mDisplayManager = context.getSystemService(
+            Context.DISPLAY_SERVICE
+        ) as DisplayManager
+        private val mDisplayListener = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) {
 
-    companion object {
-        private const val TAG = "SurfaceMediaOverlayLaye"
-        private const val MSG_POST_DISMISS = 101
-    }
+            }
 
-    private class VirtualDisplayPresentation(
-        private val virtualDisplay: VirtualDisplay,
-        private val presentation: Presentation
-    ) {
-        private val mHandler = object : Handler(Looper.myLooper()!!) {
-            override fun handleMessage(msg: Message) {
-                if (msg.what == MSG_POST_DISMISS) {
-                    presentation.dismiss()
-                    virtualDisplay.release()
+            override fun onDisplayRemoved(displayId: Int) {
+
+            }
+
+            override fun onDisplayChanged(displayId: Int) {
+                if (mVirtualDisplay.surface != null
+                    && mVirtualDisplay.display.displayId == displayId
+                    && !mPresentation.isShowing
+                ) {
+                    mPresentation.dismiss()
+                    mPresentation = createNewPresentation()
                 }
             }
         }
+        private val mVirtualDisplay = mDisplayManager.createVirtualDisplay(
+            this@SurfaceMediaOverlayLayer.toString(),
+            width,
+            height,
+            context.resources.displayMetrics.densityDpi,
+            holder.surface,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
+        )
+        private var mPresentation = createNewPresentation()
+        private val mDismissAction = Runnable {
+            mPresentation.dismiss()
+        }
+        private val mHandler = Handler(Looper.myLooper()!!)
 
-        fun resize(width: Int, height: Int, densityDpi: Int) {
-            virtualDisplay.resize(width, height, densityDpi)
+        init {
+            mDisplayManager.registerDisplayListener(mDisplayListener, mHandler)
         }
 
+        fun resize() {
+            if (mVirtualDisplay.surface != null) {
+                mVirtualDisplay.resize(
+                    width,
+                    height,
+                    context.resources.displayMetrics.densityDpi
+                )
+            }
+        }
 
         /**
          * 这里要异步销毁，等待系统将窗口Stop完，否则会崩在系统里，（这咖喱味的代码...）
          * */
-        fun dismiss() {
-            virtualDisplay.surface = null
-            mHandler.sendEmptyMessage(MSG_POST_DISMISS)
+        fun dispose() {
+            if (mVirtualDisplay.surface != null) {
+                mVirtualDisplay.surface = null
+                mDisplayManager.unregisterDisplayListener(mDisplayListener)
+                mPresentation.setContentView(Space(context))
+                val parent = mContainerView.parent
+                if (parent is ViewGroup) {
+                    parent.removeView(mContainerView)
+                }
+                mHandler.post(mDismissAction)
+            }
+        }
+
+        @Suppress("DEPRECATION")
+        private fun createNewPresentation(): Presentation {
+            val presentation = Presentation(
+                context,
+                mVirtualDisplay.display
+            )
+            presentation.requestWindowFeature(Window.FEATURE_NO_TITLE)
+            presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            presentation.window?.setBackgroundDrawable(null)
+            presentation.setCancelable(false)
+            val parent = mContainerView.parent
+            if (parent is ViewGroup) {
+                parent.removeView(mContainerView)
+            }
+            val displayMetrics = DisplayMetrics()
+            mVirtualDisplay.display.getMetrics(displayMetrics)
+            presentation.resources.updateConfiguration(
+                presentation.resources.configuration,
+                displayMetrics
+            )
+            presentation.setContentView(mContainerView)
+            presentation.show()
+            return presentation
         }
     }
 
     private class ContainerView(private val renderLayer: SurfaceMediaOverlayLayer) :
-        FrameLayout(renderLayer.context),
-        NestedScrollingParent3 {
-
-        private val mParentHelper = NestedScrollingParentHelper(this)
-
+        FrameLayout(renderLayer.context) {
         override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
             super.requestDisallowInterceptTouchEvent(disallowIntercept)
             renderLayer.parent.requestDisallowInterceptTouchEvent(
                 disallowIntercept
             )
         }
-        // --------------NestedScrollingParent-----------
-
-        override fun onStartNestedScroll(
-            child: View,
-            target: View,
-            axes: Int,
-            type: Int
-        ): Boolean {
-            return (axes and ViewCompat.SCROLL_AXIS_VERTICAL) != 0 ||
-                    (axes and ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0
-        }
-
-        override fun onStartNestedScroll(child: View, target: View, axes: Int): Boolean {
-            return onStartNestedScroll(child, target, axes, ViewCompat.TYPE_TOUCH)
-        }
-
-        override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
-            mParentHelper.onNestedScrollAccepted(child, target, axes, type)
-            renderLayer.startNestedScroll(axes, type)
-        }
-
-        override fun onNestedScrollAccepted(child: View, target: View, axes: Int) {
-            onNestedScrollAccepted(child, target, axes, ViewCompat.TYPE_TOUCH)
-        }
-
-        override fun onStopNestedScroll(target: View, type: Int) {
-            mParentHelper.onStopNestedScroll(target, type)
-            renderLayer.stopNestedScroll(type)
-        }
-
-        override fun onStopNestedScroll(target: View) {
-            onStopNestedScroll(target, ViewCompat.TYPE_TOUCH)
-        }
-
-        override fun onNestedScroll(
-            target: View,
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int,
-            type: Int,
-            consumed: IntArray
-        ) {
-            renderLayer.dispatchNestedScroll(
-                0,
-                0,
-                dxUnconsumed,
-                dyUnconsumed,
-                null,
-                type,
-                consumed
-            )
-        }
-
-        override fun onNestedScroll(
-            target: View,
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int,
-            type: Int
-        ) {
-            renderLayer.mChildHelper.dispatchNestedScroll(
-                0,
-                0,
-                dxUnconsumed,
-                dyUnconsumed,
-                null,
-                type,
-                null
-            )
-        }
-
-        override fun onNestedScroll(
-            target: View,
-            dxConsumed: Int,
-            dyConsumed: Int,
-            dxUnconsumed: Int,
-            dyUnconsumed: Int
-        ) {
-            onNestedScroll(
-                target,
-                dxConsumed,
-                dyConsumed,
-                dxUnconsumed,
-                dyUnconsumed,
-                ViewCompat.TYPE_TOUCH
-            )
-        }
-
-        override fun onNestedPreScroll(
-            target: View,
-            dx: Int,
-            dy: Int,
-            consumed: IntArray,
-            type: Int
-        ) {
-            renderLayer.dispatchNestedPreScroll(dx, dy, consumed, null, type)
-        }
-
-        override fun onNestedPreScroll(target: View, dx: Int, dy: Int, consumed: IntArray) {
-            onNestedPreScroll(target, dx, dy, consumed, ViewCompat.TYPE_TOUCH)
-        }
-
-        override fun onNestedFling(
-            target: View,
-            velocityX: Float,
-            velocityY: Float,
-            consumed: Boolean
-        ): Boolean {
-            return dispatchNestedFling(velocityX, velocityY, consumed)
-        }
-
-        override fun onNestedPreFling(
-            target: View,
-            velocityX: Float,
-            velocityY: Float
-        ): Boolean {
-            return dispatchNestedPreFling(velocityX, velocityY)
-        }
-
-        override fun getNestedScrollAxes(): Int {
-            return mParentHelper.nestedScrollAxes
-        }
-
     }
 
-    private val mChildHelper = NestedScrollingChildHelper(this)
     private val mContainerView = ContainerView(this)
     private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: ViewGroup
@@ -225,7 +152,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     }
 
     init {
-        mChildHelper.isNestedScrollingEnabled = true
         val array = context.obtainStyledAttributes(
             attrs,
             R.styleable.SurfaceMediaOverlayLayer,
@@ -243,33 +169,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
-                val displayManager =
-                    context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-                val virtualDisplay = displayManager.createVirtualDisplay(
-                    this@SurfaceMediaOverlayLayer.toString(),
-                    width,
-                    height,
-                    context.resources.displayMetrics.densityDpi,
-                    holder.surface,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
-                )
-                val presentation = Presentation(
-                    context,
-                    virtualDisplay.display
-                )
-                presentation.requestWindowFeature(Window.FEATURE_NO_TITLE)
-                presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-                presentation.window?.setBackgroundDrawable(
-                    AppCompatResources.getDrawable(
-                        context,
-                        android.R.color.transparent
-                    )
-                )
-                presentation.setCancelable(false)
-                presentation.setContentView(mContainerView)
-                presentation.show()
-                mVirtualDisplayPresentation =
-                    VirtualDisplayPresentation(virtualDisplay, presentation)
+                mVirtualDisplayPresentation = VirtualDisplayPresentation()
             }
 
             override fun surfaceChanged(
@@ -279,20 +179,12 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 height: Int
             ) {
                 val presentation = mVirtualDisplayPresentation ?: return
-                presentation.resize(
-                    width,
-                    height,
-                    context.resources.displayMetrics.densityDpi
-                )
+                presentation.resize()
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 val presentation = mVirtualDisplayPresentation ?: return
-                presentation.dismiss()
-                val parent = mContainerView.parent
-                if (parent is ViewGroup) {
-                    parent.removeView(mContainerView)
-                }
+                presentation.dispose()
                 mVirtualDisplayPresentation = null
             }
         })
@@ -306,132 +198,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         super.onConfigurationChanged(newConfig)
         val presentation = mVirtualDisplayPresentation
         if (presentation != null && newConfig != null) {
-            presentation.resize(
-                width,
-                height,
-                context.resources.displayMetrics.densityDpi
-            )
+            presentation.resize()
         }
-    }
-
-    // -------------------------------------------------------------
-
-
-    override fun setNestedScrollingEnabled(enabled: Boolean) {
-        mChildHelper.isNestedScrollingEnabled = enabled
-    }
-
-    override fun isNestedScrollingEnabled(): Boolean {
-        return mChildHelper.isNestedScrollingEnabled
-    }
-
-    override fun startNestedScroll(axes: Int, type: Int): Boolean {
-        return mChildHelper.startNestedScroll(axes, type)
-    }
-
-    override fun startNestedScroll(axes: Int): Boolean {
-        return mChildHelper.startNestedScroll(axes)
-    }
-
-    override fun stopNestedScroll(type: Int) {
-        mChildHelper.stopNestedScroll(type)
-    }
-
-    override fun stopNestedScroll() {
-        mChildHelper.stopNestedScroll()
-    }
-
-    override fun hasNestedScrollingParent(type: Int): Boolean {
-        return mChildHelper.hasNestedScrollingParent(type)
-    }
-
-    override fun hasNestedScrollingParent(): Boolean {
-        return mChildHelper.hasNestedScrollingParent()
-    }
-
-    override fun dispatchNestedScroll(
-        dxConsumed: Int,
-        dyConsumed: Int,
-        dxUnconsumed: Int,
-        dyUnconsumed: Int,
-        offsetInWindow: IntArray?,
-        type: Int,
-        consumed: IntArray
-    ) {
-
-        mChildHelper.dispatchNestedScroll(
-            dxConsumed,
-            dyConsumed,
-            dxUnconsumed,
-            dyUnconsumed,
-            offsetInWindow,
-            type,
-            consumed
-        )
-    }
-
-    override fun dispatchNestedScroll(
-        dxConsumed: Int,
-        dyConsumed: Int,
-        dxUnconsumed: Int,
-        dyUnconsumed: Int,
-        offsetInWindow: IntArray?,
-        type: Int
-    ): Boolean {
-        return mChildHelper.dispatchNestedScroll(
-            dxConsumed,
-            dyConsumed,
-            dxUnconsumed,
-            dyUnconsumed,
-            offsetInWindow,
-            type
-        )
-    }
-
-    override fun dispatchNestedScroll(
-        dxConsumed: Int,
-        dyConsumed: Int,
-        dxUnconsumed: Int,
-        dyUnconsumed: Int,
-        offsetInWindow: IntArray?
-    ): Boolean {
-        return mChildHelper.dispatchNestedScroll(
-            dxConsumed,
-            dyConsumed,
-            dxUnconsumed,
-            dyUnconsumed,
-            offsetInWindow
-        )
-    }
-
-    override fun dispatchNestedPreScroll(
-        dx: Int,
-        dy: Int,
-        consumed: IntArray?,
-        offsetInWindow: IntArray?,
-        type: Int
-    ): Boolean {
-        return mChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, type)
-    }
-
-    override fun dispatchNestedPreScroll(
-        dx: Int,
-        dy: Int,
-        consumed: IntArray?,
-        offsetInWindow: IntArray?
-    ): Boolean {
-        return mChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow)
-    }
-
-    override fun dispatchNestedFling(
-        velocityX: Float,
-        velocityY: Float,
-        consumed: Boolean
-    ): Boolean {
-        return mChildHelper.dispatchNestedFling(velocityX, velocityY, consumed)
-    }
-
-    override fun dispatchNestedPreFling(velocityX: Float, velocityY: Float): Boolean {
-        return mChildHelper.dispatchNestedPreFling(velocityX, velocityY)
     }
 }
