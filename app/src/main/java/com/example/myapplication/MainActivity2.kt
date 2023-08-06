@@ -5,6 +5,7 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import com.example.myapplication.mediaoverlay.SurfaceMediaOverlayLayer
 
 class MainActivity2 : AppCompatActivity() {
 

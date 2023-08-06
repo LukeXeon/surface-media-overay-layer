@@ -50,7 +50,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1000dp">
 
-                    <com.example.myapplication.SurfaceMediaOverlayLayer
+                    <com.example.myapplication.mediaoverlay.SurfaceMediaOverlayLayer
                         android:id="@+id/surface"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"

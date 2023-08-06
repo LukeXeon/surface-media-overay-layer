@@ -6,4 +6,13 @@
     <declare-styleable name="SurfaceMediaOverlayLayer">
         <attr name="layout" format="reference" />
     </declare-styleable>
+
+    <style name="myDialogTheme" parent="android:Theme.Dialog">
+        <item name="android:windowFrame">@null</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowNoTitle">true</item><!--除去title-->
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowBackground">@null</item><!--除去背景色-->
+    </style>
 </resources>

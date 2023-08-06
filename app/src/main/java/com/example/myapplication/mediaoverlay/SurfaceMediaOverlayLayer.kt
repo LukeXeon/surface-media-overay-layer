@@ -1,17 +1,13 @@
-package com.example.myapplication
+package com.example.myapplication.mediaoverlay
 
 import android.app.Presentation
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Handler
 import android.os.Looper
-import android.os.Message
 import android.util.AttributeSet
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -22,8 +18,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Space
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.view.NestedScrollingChildHelper
+import com.example.myapplication.R
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -43,52 +38,20 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         private val mDisplayManager = context.getSystemService(
             Context.DISPLAY_SERVICE
         ) as DisplayManager
-        private val mDisplayListener = object : DisplayManager.DisplayListener {
-            override fun onDisplayAdded(displayId: Int) {
-
-            }
-
-            override fun onDisplayRemoved(displayId: Int) {
-
-            }
-
-            override fun onDisplayChanged(displayId: Int) {
-                if (mVirtualDisplay.surface != null
-                    && mVirtualDisplay.display.displayId == displayId
-                    && !mPresentation.isShowing
-                ) {
-                    mPresentation.dismiss()
-                    mPresentation = createNewPresentation()
-                }
-            }
-        }
         private val mVirtualDisplay = mDisplayManager.createVirtualDisplay(
             this@SurfaceMediaOverlayLayer.toString(),
-            context.resources.displayMetrics.widthPixels,
-            context.resources.displayMetrics.heightPixels,
-            context.resources.displayMetrics.densityDpi,
+            width,
+            height,
+            context.resources.configuration.densityDpi,
             holder.surface,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
         )
-        private var mPresentation = createNewPresentation()
+        private val mPresentation = createNewPresentation()
         private val mDismissAction = Runnable {
             mPresentation.dismiss()
+            mVirtualDisplay.release()
         }
         private val mHandler = Handler(Looper.myLooper()!!)
-
-        init {
-            mDisplayManager.registerDisplayListener(mDisplayListener, mHandler)
-        }
-
-        fun resize() {
-            if (mVirtualDisplay.surface != null) {
-                mVirtualDisplay.resize(
-                    context.resources.displayMetrics.widthPixels,
-                    context.resources.displayMetrics.heightPixels,
-                    context.resources.displayMetrics.densityDpi
-                )
-            }
-        }
 
         /**
          * 这里要异步销毁，等待系统将窗口Stop完，否则会崩在系统里，（这咖喱味的代码...）
@@ -96,7 +59,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         fun dispose() {
             if (mVirtualDisplay.surface != null) {
                 mVirtualDisplay.surface = null
-                mDisplayManager.unregisterDisplayListener(mDisplayListener)
                 mPresentation.setContentView(Space(context))
                 val parent = mContainerView.parent
                 if (parent is ViewGroup) {
@@ -106,26 +68,27 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
         }
 
-        @Suppress("DEPRECATION")
-        private fun createNewPresentation(): Presentation {
-            val presentation = Presentation(
-                context.createDisplayContext(mVirtualDisplay.display),
+        fun resize() {
+            if (mVirtualDisplay.surface != null) {
+                mVirtualDisplay.resize(
+                    width,
+                    height,
+                    context.resources.configuration.densityDpi,
+                )
+            }
+        }
+
+        private fun createNewPresentation(): AppCompatPresentation {
+            val presentation = AppCompatPresentation(
+                context,
                 mVirtualDisplay.display
             )
-            presentation.requestWindowFeature(Window.FEATURE_NO_TITLE)
-            presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
             presentation.window?.setBackgroundDrawable(null)
             presentation.setCancelable(false)
             val parent = mContainerView.parent
             if (parent is ViewGroup) {
                 parent.removeView(mContainerView)
             }
-            val displayMetrics = DisplayMetrics()
-            mVirtualDisplay.display.getMetrics(displayMetrics)
-            presentation.resources.updateConfiguration(
-                presentation.resources.configuration,
-                displayMetrics
-            )
             presentation.setContentView(mContainerView)
             presentation.show()
             return presentation
@@ -179,7 +142,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-
+                mVirtualDisplayPresentation?.resize()
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
@@ -192,13 +155,5 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         return mContainerView.dispatchTouchEvent(event)
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration?) {
-        super.onConfigurationChanged(newConfig)
-        val presentation = mVirtualDisplayPresentation
-        if (presentation != null && newConfig != null) {
-            presentation.resize()
-        }
     }
 }
