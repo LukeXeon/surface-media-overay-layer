@@ -2,11 +2,9 @@ package com.example.myapplication.mediaoverlay
 
 import android.app.Presentation
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.PixelFormat
-import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.os.Handler
-import android.os.Looper
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -14,11 +12,19 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
-import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.Space
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.coroutineScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.whenStarted
 import com.example.myapplication.R
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -32,69 +38,7 @@ import com.example.myapplication.R
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : SurfaceView(context, attrs, defStyleAttr) {
-
-    private inner class VirtualDisplayPresentation {
-        private val mDisplayManager = context.getSystemService(
-            Context.DISPLAY_SERVICE
-        ) as DisplayManager
-        private val mVirtualDisplay = mDisplayManager.createVirtualDisplay(
-            this@SurfaceMediaOverlayLayer.toString(),
-            width,
-            height,
-            context.resources.configuration.densityDpi,
-            holder.surface,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
-        )
-        private val mPresentation = createNewPresentation()
-        private val mDismissAction = Runnable {
-            mPresentation.dismiss()
-            mVirtualDisplay.release()
-        }
-        private val mHandler = Handler(Looper.myLooper()!!)
-
-        /**
-         * 这里要异步销毁，等待系统将窗口Stop完，否则会崩在系统里，（这咖喱味的代码...）
-         * */
-        fun dispose() {
-            if (mVirtualDisplay.surface != null) {
-                mVirtualDisplay.surface = null
-                mPresentation.setContentView(Space(context))
-                val parent = mContainerView.parent
-                if (parent is ViewGroup) {
-                    parent.removeView(mContainerView)
-                }
-                mHandler.post(mDismissAction)
-            }
-        }
-
-        fun resize() {
-            if (mVirtualDisplay.surface != null) {
-                mVirtualDisplay.resize(
-                    width,
-                    height,
-                    context.resources.configuration.densityDpi,
-                )
-            }
-        }
-
-        private fun createNewPresentation(): AppCompatPresentation {
-            val presentation = AppCompatPresentation(
-                context,
-                mVirtualDisplay.display
-            )
-            presentation.window?.setBackgroundDrawable(null)
-            presentation.setCancelable(false)
-            val parent = mContainerView.parent
-            if (parent is ViewGroup) {
-                parent.removeView(mContainerView)
-            }
-            presentation.setContentView(mContainerView)
-            presentation.show()
-            return presentation
-        }
-    }
-
+) : SurfaceView(context, attrs, defStyleAttr), LifecycleOwner {
     private class ContainerView(private val renderLayer: SurfaceMediaOverlayLayer) :
         FrameLayout(renderLayer.context) {
         override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
@@ -105,14 +49,30 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         }
     }
 
+    private val mLayerMetrics = MutableStateFlow<LayerMetrics?>(null)
+    private val mLifecycle = LifecycleRegistry(this)
     private val mContainerView = ContainerView(this)
-    private var mVirtualDisplayPresentation: VirtualDisplayPresentation? = null
     val containerView: ViewGroup
         get() = mContainerView
 
     fun setContentView(view: View) {
         mContainerView.removeAllViews()
         mContainerView.addView(view)
+    }
+
+    override fun onAttachedToWindow() {
+        mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        super.onAttachedToWindow()
+    }
+
+    override fun onDetachedFromWindow() {
+        mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        mLayerMetrics.value = null
+        super.onDetachedFromWindow()
+    }
+
+    override fun getLifecycle(): Lifecycle {
+        return mLifecycle
     }
 
     init {
@@ -133,7 +93,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback2 {
             override fun surfaceCreated(holder: SurfaceHolder) {
-                mVirtualDisplayPresentation = VirtualDisplayPresentation()
+                mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
             }
 
             override fun surfaceChanged(
@@ -142,22 +102,54 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                mVirtualDisplayPresentation?.resize()
+                mLayerMetrics.value = LayerMetrics(
+                    width,
+                    height,
+                    context.resources.configuration.densityDpi
+                )
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
-                val presentation = mVirtualDisplayPresentation ?: return
-                presentation.dispose()
-                mVirtualDisplayPresentation = null
+                mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             }
 
             override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
                 mContainerView.invalidate()
             }
         })
+        mLifecycle.coroutineScope.launch {
+            var prev: VirtualDisplayPresentation? = null
+            val layerMetrics = mLayerMetrics.filterNotNull()
+                .distinctUntilChanged()
+            mLifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                    layerMetrics.collectLatest {
+                        prev?.dismissAndWaitSystem()
+                        prev = VirtualDisplayPresentation(
+                            context,
+                            holder.surface,
+                            containerView,
+                            it.densityDpi,
+                            it.width,
+                            it.height
+                        )
+                    }
+                }
+                prev?.dismissAndWaitSystem()
+            }
+        }
     }
 
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         return mContainerView.dispatchTouchEvent(event)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        mLayerMetrics.value = LayerMetrics(
+            width,
+            height,
+            context.resources.configuration.densityDpi
+        )
     }
 }
