@@ -4,10 +4,14 @@ import android.app.Presentation
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.util.Log
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Space
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -70,6 +74,13 @@ class VirtualDisplayPresentation(
             // 这个操作不可取消
             suspendCoroutine { con ->
                 mOnRemoveContinuations.add(con)
+            }
+            if (mPresentation.isShowing) {
+                suspendCoroutine { con ->
+                    mPresentation.setOnDismissListener {
+                        con.resume(Unit)
+                    }
+                }
             }
         }
     }
