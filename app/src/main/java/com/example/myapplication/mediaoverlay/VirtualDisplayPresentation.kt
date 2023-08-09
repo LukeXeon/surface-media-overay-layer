@@ -64,7 +64,6 @@ class VirtualDisplayPresentation(
             if (mPresentation.findViewById<View>(android.R.id.content) !is Space) {
                 mPresentation.setContentView(Space(mPresentation.context))
             }
-            mVirtualDisplay.surface = null
             mVirtualDisplay.release()
             // 需要等待系统确认虚拟显示器已经被移除，
             // 否则使用Surface创建虚拟显示器的时候系统内部会冲突
