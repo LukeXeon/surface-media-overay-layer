@@ -20,6 +20,7 @@ import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.whenStarted
 import com.example.myapplication.R
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -118,25 +119,25 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
         })
         mLifecycle.coroutineScope.launch {
-            var prev: VirtualDisplayPresentation? = null
             val layerMetrics = mLayerMetrics.filterNotNull()
                 .distinctUntilChanged()
-            mLifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                    layerMetrics.collectLatest {
-                        prev?.dismissAndWaitSystem()
-                        prev = VirtualDisplayPresentation(
-                            this@SurfaceMediaOverlayLayer.toString(),
-                            context,
-                            holder.surface,
-                            containerView,
-                            it.densityDpi,
-                            it.width,
-                            it.height
-                        )
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                layerMetrics.collectLatest {
+                    val virtualDisplayPresentation = VirtualDisplayPresentation(
+                        this@SurfaceMediaOverlayLayer.toString(),
+                        context,
+                        holder.surface,
+                        containerView,
+                        it.densityDpi,
+                        it.width,
+                        it.height
+                    )
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        virtualDisplayPresentation.dismissAndWaitSystem()
                     }
                 }
-                prev?.dismissAndWaitSystem()
             }
         }
     }

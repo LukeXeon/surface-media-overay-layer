@@ -8,14 +8,10 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Space
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.Collections
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentSkipListSet
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class VirtualDisplayPresentation(
     name: String,
@@ -28,7 +24,7 @@ class VirtualDisplayPresentation(
 ) {
     private val mVirtualDisplay: VirtualDisplay
     private val mPresentation: Presentation
-    private val mOnRemoveListeners = CopyOnWriteArrayList<Runnable>()
+    private val mOnRemoveContinuations = CopyOnWriteArrayList<Continuation<Unit>>()
 
     init {
         val displayManager = context.getSystemService(
@@ -49,10 +45,10 @@ class VirtualDisplayPresentation(
             android.R.style.Theme_Material_NoActionBar
         ) {
             override fun onDisplayRemoved() {
-                mOnRemoveListeners.forEach {
-                    it.run()
+                mOnRemoveContinuations.forEach {
+                    it.resume(Unit)
                 }
-                mOnRemoveListeners.clear()
+                mOnRemoveContinuations.clear()
             }
         }
         presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
@@ -69,20 +65,11 @@ class VirtualDisplayPresentation(
                 mPresentation.setContentView(Space(mPresentation.context))
             }
             mVirtualDisplay.release()
-            // 需要等待系统确认虚拟显示器已经被移除，否则使用Surface创建虚拟显示器的时候系统内部会冲突
-            suspendCancellableCoroutine { con ->
-                val onRemove = object : Runnable {
-                    override fun run() {
-                        if (!con.isCompleted) {
-                            con.resume(Unit)
-                            mOnRemoveListeners.remove(this)
-                        }
-                    }
-                }
-                con.invokeOnCancellation {
-                    mOnRemoveListeners.remove(onRemove)
-                }
-                mOnRemoveListeners.add(onRemove)
+            // 需要等待系统确认虚拟显示器已经被移除，
+            // 否则使用Surface创建虚拟显示器的时候系统内部会冲突
+            // 这个操作不可取消
+            suspendCoroutine { con ->
+                mOnRemoveContinuations.add(con)
             }
         }
     }

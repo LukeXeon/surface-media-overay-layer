@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -23,6 +24,9 @@ class MainActivity2 : AppCompatActivity() {
         val button = surface.containerView.findViewById<Button>(R.id.button)
         button.isClickable = true
         imageView.isClickable = true
+        button.setOnClickListener {
+            startActivity(Intent(this, MainActivity2::class.java))
+        }
         Glide.with(imageView)
             .asGif()
             .load(URL)
