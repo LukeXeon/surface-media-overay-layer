@@ -7,7 +7,7 @@
         <attr name="layout" format="reference" />
     </declare-styleable>
 
-    <style name="AppCompat.Presentation" parent="android:Theme.Material.NoActionBar.Fullscreen">
+    <style name="AppCompat.Presentation" parent="android:Theme.DeviceDefault.NoActionBar.Fullscreen">
         <item name="android:windowFrame">@null</item>
         <item name="android:focusable">false</item>
         <item name="android:windowCloseOnTouchOutside">false</item>

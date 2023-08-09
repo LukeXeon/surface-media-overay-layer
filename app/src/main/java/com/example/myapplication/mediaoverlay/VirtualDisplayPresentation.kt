@@ -9,11 +9,16 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Space
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Collections
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListSet
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 
 class VirtualDisplayPresentation(
+    name: String,
     context: Context,
     surface: Surface,
     contentView: View,
@@ -21,10 +26,6 @@ class VirtualDisplayPresentation(
     width: Int,
     height: Int
 ) {
-    companion object {
-        private const val TAG = "VirtualDisplayPresentation"
-    }
-
     private val mVirtualDisplay: VirtualDisplay
     private val mPresentation: Presentation
     private val mOnRemoveListeners = CopyOnWriteArrayList<Runnable>()
@@ -34,7 +35,7 @@ class VirtualDisplayPresentation(
             Context.DISPLAY_SERVICE
         ) as DisplayManager
         val virtualDisplay = displayManager.createVirtualDisplay(
-            "$TAG:${UUID.randomUUID()}",
+            name,
             width,
             height,
             densityDpi,
@@ -44,7 +45,8 @@ class VirtualDisplayPresentation(
         mVirtualDisplay = virtualDisplay
         val presentation = object : Presentation(
             context,
-            virtualDisplay.display
+            virtualDisplay.display,
+            android.R.style.Theme_Material_NoActionBar
         ) {
             override fun onDisplayRemoved() {
                 mOnRemoveListeners.forEach {
