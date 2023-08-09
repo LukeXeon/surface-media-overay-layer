@@ -126,6 +126,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     layerMetrics.collectLatest {
                         prev?.dismissAndWaitSystem()
                         prev = VirtualDisplayPresentation(
+                            this@SurfaceMediaOverlayLayer.toString(),
                             context,
                             holder.surface,
                             containerView,
