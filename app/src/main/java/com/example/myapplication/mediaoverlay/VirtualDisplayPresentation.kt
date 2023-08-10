@@ -9,7 +9,9 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Space
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
@@ -72,15 +74,21 @@ class VirtualDisplayPresentation(
             // 需要等待系统确认虚拟显示器已经被移除，
             // 否则使用Surface创建虚拟显示器的时候系统内部会冲突
             // 这个操作不可取消
-            suspendCoroutine { con ->
-                mOnRemoveContinuations.add(con)
-            }
-            if (mPresentation.isShowing) {
-                suspendCoroutine { con ->
-                    mPresentation.setOnDismissListener {
-                        con.resume(Unit)
+            coroutineScope {
+                joinAll(
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        suspendCoroutine { con ->
+                            mOnRemoveContinuations.add(con)
+                        }
+                    },
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        suspendCoroutine { con ->
+                            mPresentation.setOnDismissListener {
+                                con.resume(Unit)
+                            }
+                        }
                     }
-                }
+                )
             }
         }
     }
