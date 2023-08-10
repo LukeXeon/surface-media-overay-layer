@@ -4,65 +4,67 @@ import android.app.Presentation
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.util.Log
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Space
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class VirtualDisplayPresentation(
-    name: String,
-    context: Context,
-    surface: Surface,
-    contentView: View,
-    densityDpi: Int,
-    width: Int,
-    height: Int
+class VirtualDisplayPresentation private constructor(
+    private val mVirtualDisplay: VirtualDisplay,
+    private val mPresentation: Presentation,
+    private val mOnRemoveListeners: CopyOnWriteArrayList<Runnable>
 ) {
-    private val mVirtualDisplay: VirtualDisplay
-    private val mPresentation: Presentation
-    private val mOnRemoveContinuations = CopyOnWriteArrayList<Continuation<Unit>>()
-
-    init {
-        val displayManager = context.getSystemService(
-            Context.DISPLAY_SERVICE
-        ) as DisplayManager
-        val virtualDisplay = displayManager.createVirtualDisplay(
-            name,
-            width,
-            height,
-            densityDpi,
-            surface,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
-        )
-        mVirtualDisplay = virtualDisplay
-        val presentation = object : Presentation(
-            context,
-            virtualDisplay.display,
-            android.R.style.Theme_Material_NoActionBar
-        ) {
-            override fun onDisplayRemoved() {
-                mOnRemoveContinuations.forEach {
-                    it.resume(Unit)
+    companion object {
+        fun create(
+            name: String,
+            context: Context,
+            surface: Surface,
+            contentView: View,
+            densityDpi: Int,
+            width: Int,
+            height: Int
+        ): VirtualDisplayPresentation {
+            val displayManager = context.getSystemService(
+                Context.DISPLAY_SERVICE
+            ) as DisplayManager
+            val virtualDisplay = displayManager.createVirtualDisplay(
+                name,
+                width,
+                height,
+                densityDpi,
+                surface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
+            )
+            val onRemoveListeners = CopyOnWriteArrayList<Runnable>()
+            val presentation = object : Presentation(
+                context,
+                virtualDisplay.display,
+                android.R.style.Theme_Material_NoActionBar
+            ) {
+                override fun onDisplayRemoved() {
+                    onRemoveListeners.forEach {
+                        it.run()
+                    }
                 }
-                mOnRemoveContinuations.clear()
             }
+            presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            presentation.window?.setBackgroundDrawable(null)
+            presentation.setCancelable(false)
+            presentation.setContentView(contentView)
+            presentation.show()
+            return VirtualDisplayPresentation(
+                virtualDisplay,
+                presentation,
+                onRemoveListeners
+            )
         }
-        presentation.window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-        presentation.window?.setBackgroundDrawable(null)
-        presentation.setCancelable(false)
-        presentation.setContentView(contentView)
-        presentation.show()
-        mPresentation = presentation
     }
 
     suspend fun dismissAndWaitSystem() {
@@ -78,13 +80,20 @@ class VirtualDisplayPresentation(
                 joinAll(
                     launch(start = CoroutineStart.UNDISPATCHED) {
                         suspendCoroutine { con ->
-                            mOnRemoveContinuations.add(con)
+                            val listener = object : Runnable {
+                                override fun run() {
+                                    con.resume(Unit)
+                                    mOnRemoveListeners.remove(this)
+                                }
+                            }
+                            mOnRemoveListeners.add(listener)
                         }
                     },
                     launch(start = CoroutineStart.UNDISPATCHED) {
                         suspendCoroutine { con ->
                             mPresentation.setOnDismissListener {
                                 con.resume(Unit)
+                                mPresentation.setOnDismissListener(null)
                             }
                         }
                     }

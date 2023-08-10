@@ -18,14 +18,18 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.whenResumed
 import androidx.lifecycle.whenStarted
+import androidx.lifecycle.withResumed
 import com.example.myapplication.R
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -68,7 +72,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        mLayerMetrics.value = null
         super.onDetachedFromWindow()
     }
 
@@ -103,15 +106,21 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                mLayerMetrics.value = LayerMetrics(
-                    width,
-                    height,
-                    context.resources.configuration.densityDpi
-                )
+                mLifecycle.coroutineScope.launchWhenResumed {
+                    while (holder.isCreating) {
+                        yield()
+                    }
+                    mLayerMetrics.value = LayerMetrics(
+                        width,
+                        height,
+                        context.resources.configuration.densityDpi
+                    )
+                }
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+                mLayerMetrics.value = null
             }
         })
         mLifecycle.coroutineScope.launch {
@@ -119,7 +128,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 .distinctUntilChanged()
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 layerMetrics.collectLatest {
-                    val virtualDisplayPresentation = VirtualDisplayPresentation(
+                    val virtualDisplayPresentation = VirtualDisplayPresentation.create(
                         this@SurfaceMediaOverlayLayer.toString(),
                         context,
                         holder.surface,
@@ -144,10 +153,12 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
-        mLayerMetrics.value = LayerMetrics(
-            width,
-            height,
-            context.resources.configuration.densityDpi
-        )
+        if (mLifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            mLayerMetrics.value = LayerMetrics(
+                width,
+                height,
+                context.resources.configuration.densityDpi
+            )
+        }
     }
 }
