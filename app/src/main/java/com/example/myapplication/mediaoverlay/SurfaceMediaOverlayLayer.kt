@@ -92,7 +92,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             )
         }
         holder.setFormat(PixelFormat.TRANSPARENT)
-        holder.addCallback(object : SurfaceHolder.Callback2 {
+        holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
             }
@@ -112,10 +112,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-            }
-
-            override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
-                mContainerView.invalidate()
             }
         })
         mLifecycle.coroutineScope.launch {
