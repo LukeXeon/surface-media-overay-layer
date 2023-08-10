@@ -106,16 +106,11 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                 width: Int,
                 height: Int
             ) {
-                mLifecycle.coroutineScope.launchWhenResumed {
-                    while (holder.isCreating) {
-                        yield()
-                    }
-                    mLayerMetrics.value = LayerMetrics(
-                        width,
-                        height,
-                        context.resources.configuration.densityDpi
-                    )
-                }
+                mLayerMetrics.value = LayerMetrics(
+                    width,
+                    height,
+                    context.resources.configuration.densityDpi
+                )
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
