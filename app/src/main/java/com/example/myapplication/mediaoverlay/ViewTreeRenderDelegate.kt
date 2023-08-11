@@ -2,24 +2,20 @@ package com.example.myapplication.mediaoverlay
 
 import android.app.Presentation
 import android.content.Context
+import android.content.res.Resources
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Space
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class VirtualDisplayPresentation private constructor(
+class ViewTreeRenderDelegate private constructor(
     private val mVirtualDisplay: VirtualDisplay,
-    private val mPresentation: Presentation,
-    private val mOnRemoveListeners: CopyOnWriteArrayList<Runnable>
+    private val mPresentation: Presentation
 ) {
     companion object {
         fun create(
@@ -27,30 +23,42 @@ class VirtualDisplayPresentation private constructor(
             context: Context,
             surface: Surface,
             contentView: View,
-            densityDpi: Int,
-            width: Int,
-            height: Int
-        ): VirtualDisplayPresentation {
+            layerMetrics: LayerMetrics,
+        ): ViewTreeRenderDelegate {
             val displayManager = context.getSystemService(
                 Context.DISPLAY_SERVICE
             ) as DisplayManager
             val virtualDisplay = displayManager.createVirtualDisplay(
                 name,
-                width,
-                height,
-                densityDpi,
+                layerMetrics.width,
+                layerMetrics.height,
+                layerMetrics.densityDpi,
                 surface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
             )
-            val onRemoveListeners = CopyOnWriteArrayList<Runnable>()
             val presentation = object : Presentation(
                 context,
                 virtualDisplay.display,
                 android.R.style.Theme_Material_NoActionBar
             ) {
-                override fun onDisplayRemoved() {
-                    onRemoveListeners.forEach {
-                        it.run()
+                private var mWrapper: Resources? = null
+                private val mDisplayMetrics = DisplayMetrics()
+                override fun getResources(): Resources {
+                    val base = super.getResources()
+                    display.getMetrics(mDisplayMetrics)
+                    return if (base.displayMetrics == mDisplayMetrics) {
+                        base
+                    } else {
+                        var wrapper = mWrapper
+                        if (wrapper == null || wrapper.displayMetrics != mDisplayMetrics) {
+                            wrapper = Resources(
+                                base.assets,
+                                mDisplayMetrics,
+                                base.configuration
+                            )
+                            mWrapper = wrapper
+                        }
+                        wrapper
                     }
                 }
             }
@@ -59,15 +67,22 @@ class VirtualDisplayPresentation private constructor(
             presentation.setCancelable(false)
             presentation.setContentView(contentView)
             presentation.show()
-            return VirtualDisplayPresentation(
+            return ViewTreeRenderDelegate(
                 virtualDisplay,
-                presentation,
-                onRemoveListeners
+                presentation
             )
         }
     }
 
-    suspend fun dismissAndWaitSystem() {
+    fun resize(layerMetrics: LayerMetrics) {
+        mVirtualDisplay.resize(
+            layerMetrics.width,
+            layerMetrics.height,
+            layerMetrics.densityDpi
+        )
+    }
+
+    suspend fun dismiss() {
         if (mPresentation.isShowing) {
             if (mPresentation.findViewById<View>(android.R.id.content) !is Space) {
                 mPresentation.setContentView(Space(mPresentation.context))
@@ -76,28 +91,11 @@ class VirtualDisplayPresentation private constructor(
             // 需要等待系统确认虚拟显示器已经被移除，
             // 否则使用Surface创建虚拟显示器的时候系统内部会冲突
             // 这个操作不可取消
-            coroutineScope {
-                joinAll(
-                    launch(start = CoroutineStart.UNDISPATCHED) {
-                        suspendCoroutine { con ->
-                            val listener = object : Runnable {
-                                override fun run() {
-                                    con.resume(Unit)
-                                    mOnRemoveListeners.remove(this)
-                                }
-                            }
-                            mOnRemoveListeners.add(listener)
-                        }
-                    },
-                    launch(start = CoroutineStart.UNDISPATCHED) {
-                        suspendCoroutine { con ->
-                            mPresentation.setOnDismissListener {
-                                con.resume(Unit)
-                                mPresentation.setOnDismissListener(null)
-                            }
-                        }
-                    }
-                )
+            suspendCoroutine { con ->
+                mPresentation.setOnDismissListener {
+                    con.resume(Unit)
+                    mPresentation.setOnDismissListener(null)
+                }
             }
         }
     }

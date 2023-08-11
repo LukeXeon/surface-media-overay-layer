@@ -18,18 +18,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.whenResumed
-import androidx.lifecycle.whenStarted
-import androidx.lifecycle.withResumed
 import com.example.myapplication.R
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 /**
  * 一种特殊的[View]，能将普通[View]渲染成[SurfaceView]的形式
@@ -122,21 +116,24 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             val layerMetrics = mLayerMetrics.filterNotNull()
                 .distinctUntilChanged()
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                layerMetrics.collectLatest {
-                    val virtualDisplayPresentation = VirtualDisplayPresentation.create(
-                        this@SurfaceMediaOverlayLayer.toString(),
-                        context,
-                        holder.surface,
-                        containerView,
-                        it.densityDpi,
-                        it.width,
-                        it.height
-                    )
-                    try {
-                        awaitCancellation()
-                    } finally {
-                        virtualDisplayPresentation.dismissAndWaitSystem()
+                var viewTreeRenderDelegate: ViewTreeRenderDelegate? = null
+                try {
+                    layerMetrics.collectLatest {
+                        val current = viewTreeRenderDelegate
+                        if (current == null) {
+                            viewTreeRenderDelegate = ViewTreeRenderDelegate.create(
+                                this@SurfaceMediaOverlayLayer.toString(),
+                                context,
+                                holder.surface,
+                                containerView,
+                                it
+                            )
+                        } else {
+                            current.resize(it)
+                        }
                     }
+                } finally {
+                    viewTreeRenderDelegate?.dismiss()
                 }
             }
         }
