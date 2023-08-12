@@ -38,7 +38,7 @@ class ViewTreeRenderDelegate constructor(
             virtualDisplay.display,
             android.R.style.Theme_Holo_NoActionBar
         ) {
-            private var mWrapper: Resources? = null
+            private var mOverrideRes: Resources? = null
             private val mDisplayMetrics = DisplayMetrics()
             override fun getResources(): Resources {
                 val base = super.getResources()
@@ -46,16 +46,16 @@ class ViewTreeRenderDelegate constructor(
                 return if (base.displayMetrics == mDisplayMetrics) {
                     base
                 } else {
-                    var wrapper = mWrapper
-                    if (wrapper == null || wrapper.displayMetrics != mDisplayMetrics) {
-                        wrapper = Resources(
+                    var res = mOverrideRes
+                    if (res == null || res.displayMetrics != mDisplayMetrics) {
+                        res = Resources(
                             base.assets,
                             mDisplayMetrics,
                             base.configuration
                         )
-                        mWrapper = wrapper
+                        mOverrideRes = res
                     }
-                    wrapper
+                    res
                 }
             }
         }
