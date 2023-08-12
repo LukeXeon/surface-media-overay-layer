@@ -2,9 +2,4 @@
 <resources>
 
     <style name="Theme.MyApplication" parent="Theme.AppCompat" />
-
-    <declare-styleable name="SurfaceMediaOverlayLayer">
-        <attr name="android:layout" format="reference" />
-        <attr name="android:inflatedId" format="reference" />
-    </declare-styleable>
 </resources>

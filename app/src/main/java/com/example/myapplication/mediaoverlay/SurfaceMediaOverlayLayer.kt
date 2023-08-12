@@ -3,6 +3,7 @@ package com.example.myapplication.mediaoverlay
 import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Canvas
 import android.graphics.PixelFormat
 import android.hardware.display.VirtualDisplay
 import android.util.AttributeSet
@@ -12,6 +13,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewStub
 import android.widget.FrameLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -56,31 +58,9 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     }
 
     init {
-        val array = context.obtainStyledAttributes(
-            attrs,
-            R.styleable.SurfaceMediaOverlayLayer,
-            defStyleAttr,
-            0
-        )
-        val inflateId = array.getResourceId(
-            R.styleable.SurfaceMediaOverlayLayer_android_inflatedId,
-            NO_ID
-        )
-        val layoutId = array.getResourceId(
-            R.styleable.SurfaceMediaOverlayLayer_android_layout,
-            NO_ID
-        )
-        array.recycle()
-        if (layoutId != NO_ID) {
-            val view = LayoutInflater.from(context).inflate(
-                layoutId,
-                mContainerView, false
-            )
-            if (inflateId != NO_ID) {
-                view.id = inflateId
-            }
-            mContainerView.addView(view)
-        }
+        val viewStub = ViewStub(context, attrs, defStyleAttr)
+        mContainerView.addView(viewStub)
+        viewStub.inflate()
         addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
         holder.setFormat(PixelFormat.TRANSLUCENT)
         holder.addCallback(mSurfaceLifecycleOwner)
