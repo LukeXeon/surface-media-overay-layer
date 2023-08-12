@@ -50,7 +50,7 @@ class ViewTreeRenderDelegate constructor(
     private suspend fun createNewDisplay(
         layerMetrics: LayerMetrics
     ): VirtualDisplay {
-        val virtualDisplay = suspendCoroutine { con ->
+        return suspendCoroutine { con ->
             var newDisplay: VirtualDisplay? = null
             displayManager.registerDisplayListener(
                 object : DisplayListenerAdapter {
@@ -73,7 +73,6 @@ class ViewTreeRenderDelegate constructor(
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
             )
         }
-        return virtualDisplay
     }
 
     @Suppress("DEPRECATION")
