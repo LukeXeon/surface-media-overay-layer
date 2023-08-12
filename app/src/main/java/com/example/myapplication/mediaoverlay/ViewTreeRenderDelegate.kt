@@ -23,8 +23,8 @@ class ViewTreeRenderDelegate constructor(
     private val surface: Surface,
     private val contentView: View,
 ) {
-    private val snapshotView by lazy {
-        SnapshotView(
+    private val substituteView by lazy {
+        SubstituteView(
             context.applicationContext
         )
     }
@@ -38,7 +38,7 @@ class ViewTreeRenderDelegate constructor(
         val presentation: Presentation
     )
 
-    private class SnapshotView(context: Context) : View(context) {
+    private class SubstituteView(context: Context) : View(context) {
         private val picture = Picture()
 
         init {
@@ -141,13 +141,13 @@ class ViewTreeRenderDelegate constructor(
         val (virtualDisplay, presentation) = virtualDisplayPresentation ?: return
         if (presentation.isShowing) {
             val contentView = presentation.findViewById<View>(android.R.id.content)
-            if (contentView !is SnapshotView) {
-                val parent = snapshotView.parent
+            if (contentView !is SubstituteView) {
+                val parent = substituteView.parent
                 if (parent is ViewGroup) {
-                    parent.removeView(snapshotView)
+                    parent.removeView(substituteView)
                 }
-                snapshotView.takeCapture(contentView)
-                presentation.setContentView(snapshotView)
+                substituteView.takeCapture(contentView)
+                presentation.setContentView(substituteView)
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
