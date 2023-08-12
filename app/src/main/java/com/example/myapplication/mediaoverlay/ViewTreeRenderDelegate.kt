@@ -10,6 +10,7 @@ import android.hardware.display.VirtualDisplay
 import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import com.example.myapplication.R
 import kotlin.coroutines.resume
@@ -85,6 +86,11 @@ class ViewTreeRenderDelegate constructor(
                 snapshotView.setTag(R.id.snapshot_view, Unit)
                 val width = contentView.width
                 val height = contentView.width
+                val layoutParams = contentView.layoutParams
+                contentView.layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
                 if (width * height > 0) {
                     val picture = Picture()
                     val canvas = picture.beginRecording(width, height)
@@ -92,7 +98,7 @@ class ViewTreeRenderDelegate constructor(
                     picture.endRecording()
                     snapshotView.background = PictureDrawable(picture)
                 }
-                presentation.setContentView(snapshotView, contentView.layoutParams)
+                presentation.setContentView(snapshotView, layoutParams)
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
