@@ -7,4 +7,6 @@
         <attr name="android:layout" format="reference" />
         <attr name="android:inflatedId" format="reference" />
     </declare-styleable>
+
+    <item name="snapshot_view" type="id" />
 </resources>

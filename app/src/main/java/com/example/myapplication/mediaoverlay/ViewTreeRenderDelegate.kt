@@ -3,13 +3,20 @@ package com.example.myapplication.mediaoverlay
 import android.app.Presentation
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Picture
+import android.graphics.drawable.PictureDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.Space
+import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.view.ViewCompat
+import com.example.myapplication.R
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -19,6 +26,7 @@ class ViewTreeRenderDelegate constructor(
     private val surface: Surface,
     private val contentView: View,
 ) {
+
     private var virtualDisplayPresentation: Pair<VirtualDisplay, Presentation>? = null
 
     @Suppress("DEPRECATION")
@@ -76,8 +84,20 @@ class ViewTreeRenderDelegate constructor(
     suspend fun dismiss() {
         val (virtualDisplay, presentation) = virtualDisplayPresentation ?: return
         if (presentation.isShowing) {
-            if (presentation.findViewById<View>(android.R.id.content) !is Space) {
-                presentation.setContentView(Space(context.applicationContext))
+            val contentView = presentation.findViewById<View>(android.R.id.content)
+            if (contentView.getTag(R.id.snapshot_view) !is Unit) {
+                val snapshotView = View(context)
+                snapshotView.setTag(R.id.snapshot_view, Unit)
+                val width = contentView.width
+                val height = contentView.width
+                if (width * height > 0) {
+                    val picture = Picture()
+                    val canvas = picture.beginRecording(width, height)
+                    contentView.draw(canvas)
+                    picture.endRecording()
+                    snapshotView.background = PictureDrawable(picture)
+                }
+                presentation.setContentView(snapshotView, contentView.layoutParams)
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
