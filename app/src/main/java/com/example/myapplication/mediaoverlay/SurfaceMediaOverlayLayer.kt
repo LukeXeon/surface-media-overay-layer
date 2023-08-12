@@ -94,7 +94,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
             mContainerView.addView(view)
         }
-        holder.setFormat(PixelFormat.TRANSPARENT)
+        holder.setFormat(PixelFormat.TRANSLUCENT)
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)

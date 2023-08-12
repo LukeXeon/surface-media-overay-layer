@@ -20,6 +20,7 @@ class ViewTreeRenderDelegate constructor(
     private val contentView: View,
 ) {
     private var virtualDisplayPresentation: Pair<VirtualDisplay, Presentation>? = null
+
     @Suppress("DEPRECATION")
     private fun createNew(layerMetrics: LayerMetrics): Pair<VirtualDisplay, Presentation> {
         val displayManager = context.getSystemService(
@@ -36,7 +37,7 @@ class ViewTreeRenderDelegate constructor(
         val presentation = object : Presentation(
             context,
             virtualDisplay.display,
-            android.R.style.Theme_Holo_NoActionBar
+            android.R.style.Theme_Translucent_NoTitleBar_Fullscreen
         ) {
             private var mOverrideRes: Resources? = null
             private val mDisplayMetrics = DisplayMetrics()
@@ -61,7 +62,6 @@ class ViewTreeRenderDelegate constructor(
         }
         val window = requireNotNull(presentation.window)
         window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-        window.setBackgroundDrawable(null)
         presentation.setCancelable(false)
         presentation.setContentView(contentView)
         presentation.show()
