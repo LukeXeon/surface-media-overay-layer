@@ -6,7 +6,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 
-class SurfaceLifecycleOwner : SurfaceHolderCallback,
+class SurfaceLifecycleOwner : SurfaceHolderCallbackAdapter,
     LifecycleOwner,
     View.OnAttachStateChangeListener {
     private val mLifecycle = LifecycleRegistry(this)

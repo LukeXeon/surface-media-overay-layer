@@ -61,7 +61,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
         holder.setFormat(PixelFormat.TRANSLUCENT)
         holder.addCallback(mSurfaceLifecycleOwner)
-        holder.addCallback(object : SurfaceHolderCallback {
+        holder.addCallback(object : SurfaceHolderCallbackAdapter {
             override fun surfaceChanged(
                 holder: SurfaceHolder,
                 format: Int,

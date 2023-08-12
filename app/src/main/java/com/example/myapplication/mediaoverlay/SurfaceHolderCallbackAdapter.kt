@@ -2,7 +2,7 @@ package com.example.myapplication.mediaoverlay
 
 import android.view.SurfaceHolder
 
-interface SurfaceHolderCallback : SurfaceHolder.Callback2 {
+interface SurfaceHolderCallbackAdapter : SurfaceHolder.Callback2 {
     override fun surfaceCreated(holder: SurfaceHolder) {
     }
 
