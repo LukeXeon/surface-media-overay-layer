@@ -116,24 +116,18 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             val layerMetrics = mLayerMetrics.filterNotNull()
                 .distinctUntilChanged()
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                var viewTreeRenderDelegate: ViewTreeRenderDelegate? = null
+                val viewTreeRenderDelegate = ViewTreeRenderDelegate(
+                    context,
+                    this@SurfaceMediaOverlayLayer.toString(),
+                    holder.surface,
+                    containerView
+                )
                 try {
                     layerMetrics.collectLatest {
-                        val current = viewTreeRenderDelegate
-                        if (current == null) {
-                            viewTreeRenderDelegate = ViewTreeRenderDelegate.create(
-                                this@SurfaceMediaOverlayLayer.toString(),
-                                context,
-                                holder.surface,
-                                containerView,
-                                it
-                            )
-                        } else {
-                            current.resize(it)
-                        }
+                        viewTreeRenderDelegate.resize(it)
                     }
                 } finally {
-                    viewTreeRenderDelegate?.dismiss()
+                    viewTreeRenderDelegate.dismiss()
                 }
             }
         }
