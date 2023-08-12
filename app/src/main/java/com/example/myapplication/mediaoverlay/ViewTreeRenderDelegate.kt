@@ -35,7 +35,7 @@ class ViewTreeRenderDelegate constructor(
         val presentation = object : Presentation(
             context,
             virtualDisplay.display,
-            android.R.style.Theme_Material_NoActionBar
+            android.R.style.Theme_Holo_NoActionBar
         ) {
             private var mWrapper: Resources? = null
             private val mDisplayMetrics = DisplayMetrics()
