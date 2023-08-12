@@ -12,6 +12,7 @@ import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.Space
 import com.example.myapplication.R
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -80,20 +81,8 @@ class ViewTreeRenderDelegate constructor(
     suspend fun dismiss() {
         val (virtualDisplay, presentation) = virtualDisplayPresentation ?: return
         if (presentation.isShowing) {
-            val contentView = presentation.findViewById<View>(android.R.id.content)
-            if (contentView.getTag(R.id.snapshot_view) !is Unit) {
-                val snapshotView = View(context)
-                snapshotView.setTag(R.id.snapshot_view, Unit)
-                val width = contentView.width
-                val height = contentView.width
-                if (width * height > 0) {
-                    val picture = Picture()
-                    val canvas = picture.beginRecording(width, height)
-                    contentView.draw(canvas)
-                    picture.endRecording()
-                    snapshotView.background = PictureDrawable(picture)
-                }
-                presentation.setContentView(snapshotView, contentView.layoutParams)
+            if (presentation.findViewById<View>(android.R.id.content) !is Space) {
+                presentation.setContentView(Space(presentation.context))
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
