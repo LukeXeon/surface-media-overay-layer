@@ -4,7 +4,7 @@
     <style name="Theme.MyApplication" parent="Theme.AppCompat" />
 
     <declare-styleable name="SurfaceMediaOverlayLayer">
-        <attr name="layout" format="reference" />
+        <attr name="android:layout" format="reference" />
     </declare-styleable>
 
     <style name="AppCompat.Presentation" parent="android:Theme.Holo.NoActionBar">

@@ -77,7 +77,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             defStyleAttr,
             0
         )
-        val layoutId = array.getResourceId(R.styleable.SurfaceMediaOverlayLayer_layout, NO_ID)
+        val layoutId = array.getResourceId(R.styleable.SurfaceMediaOverlayLayer_android_layout, NO_ID)
         array.recycle()
         if (layoutId != NO_ID) {
             LayoutInflater.from(context).inflate(
