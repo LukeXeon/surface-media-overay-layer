@@ -17,6 +17,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.coroutineScope
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.myapplication.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +38,7 @@ import kotlinx.coroutines.launch
  * */
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : SurfaceView(context, attrs, defStyleAttr), LifecycleOwner {
+) : SurfaceView(context, attrs, defStyleAttr) {
     private class ContainerView(private val renderLayer: SurfaceMediaOverlayLayer) :
         FrameLayout(renderLayer.context) {
         override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
@@ -49,7 +50,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     }
 
     private val mLayerMetrics = MutableStateFlow<LayerMetrics?>(null)
-    private val mLifecycle = LifecycleRegistry(this)
+    private val mSurfaceLifecycleOwner = SurfaceLifecycleOwner()
     private val mContainerView = ContainerView(this)
     val containerView: ViewGroup
         get() = mContainerView
@@ -60,17 +61,13 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     }
 
     override fun onAttachedToWindow() {
-        mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
         super.onAttachedToWindow()
     }
 
     override fun onDetachedFromWindow() {
-        mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         super.onDetachedFromWindow()
-    }
-
-    override fun getLifecycle(): Lifecycle {
-        return mLifecycle
     }
 
     init {
@@ -91,7 +88,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
-                mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+                mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
             }
 
             override fun surfaceChanged(
@@ -108,12 +105,11 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
-                mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-                mLayerMetrics.value = null
+                mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             }
         })
-        mLifecycle.coroutineScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+        mSurfaceLifecycleOwner.lifecycleScope.launch {
+            mSurfaceLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 val viewTreeRenderDelegate = ViewTreeRenderDelegate(
                     context,
                     this@SurfaceMediaOverlayLayer.toString(),
@@ -127,6 +123,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                             viewTreeRenderDelegate.resize(it)
                         }
                 } finally {
+                    mLayerMetrics.value = null
                     viewTreeRenderDelegate.dismiss()
                 }
             }
@@ -139,7 +136,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
-        if (mLifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+        if (mSurfaceLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
             mLayerMetrics.value = LayerMetrics(
                 width,
                 height,
