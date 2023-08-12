@@ -77,7 +77,7 @@ class ViewTreeRenderDelegate constructor(
         val (virtualDisplay, presentation) = virtualDisplayPresentation ?: return
         if (presentation.isShowing) {
             if (presentation.findViewById<View>(android.R.id.content) !is Space) {
-                presentation.setContentView(Space(presentation.context.applicationContext))
+                presentation.setContentView(Space(context.applicationContext))
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
