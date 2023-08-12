@@ -90,7 +90,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                             viewTreeRenderDelegate.resize(it)
                         }
                 } finally {
-                    mLayerMetrics.value = null
                     viewTreeRenderDelegate.dismiss()
                 }
             }
