@@ -20,6 +20,7 @@ class ViewTreeRenderDelegate constructor(
     private val contentView: View,
 ) {
     private var virtualDisplayPresentation: Pair<VirtualDisplay, Presentation>? = null
+    @Suppress("DEPRECATION")
     private fun createNew(layerMetrics: LayerMetrics): Pair<VirtualDisplay, Presentation> {
         val displayManager = context.getSystemService(
             Context.DISPLAY_SERVICE
