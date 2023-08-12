@@ -86,11 +86,6 @@ class ViewTreeRenderDelegate constructor(
                 snapshotView.setTag(R.id.snapshot_view, Unit)
                 val width = contentView.width
                 val height = contentView.width
-                val layoutParams = contentView.layoutParams
-                contentView.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
                 if (width * height > 0) {
                     val picture = Picture()
                     val canvas = picture.beginRecording(width, height)
@@ -98,7 +93,7 @@ class ViewTreeRenderDelegate constructor(
                     picture.endRecording()
                     snapshotView.background = PictureDrawable(picture)
                 }
-                presentation.setContentView(snapshotView, layoutParams)
+                presentation.setContentView(snapshotView, contentView.layoutParams)
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
