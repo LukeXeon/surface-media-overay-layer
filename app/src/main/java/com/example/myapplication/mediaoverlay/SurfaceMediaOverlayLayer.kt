@@ -3,11 +3,9 @@ package com.example.myapplication.mediaoverlay
 import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Canvas
 import android.graphics.PixelFormat
 import android.hardware.display.VirtualDisplay
 import android.util.AttributeSet
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -18,7 +16,6 @@ import android.widget.FrameLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.myapplication.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged

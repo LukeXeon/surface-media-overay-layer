@@ -4,18 +4,13 @@ import android.app.Presentation
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Picture
-import android.graphics.Rect
 import android.graphics.drawable.PictureDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
-import android.view.ViewGroup
-import android.view.ViewStub
 import android.view.WindowManager
-import android.widget.Space
-import com.example.myapplication.R
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
