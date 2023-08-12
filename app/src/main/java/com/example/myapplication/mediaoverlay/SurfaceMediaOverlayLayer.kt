@@ -92,7 +92,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             if (inflateId != NO_ID) {
                 view.id = inflateId
             }
-            mContainerView.addView(mContainerView)
+            mContainerView.addView(view)
         }
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback {
