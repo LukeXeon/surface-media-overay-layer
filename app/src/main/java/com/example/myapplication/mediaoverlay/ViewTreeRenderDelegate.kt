@@ -61,20 +61,20 @@ class ViewTreeRenderDelegate constructor(
         layerMetrics: LayerMetrics
     ): VirtualDisplay {
         return suspendCoroutine { con ->
-            var newDisplay: VirtualDisplay? = null
+            var virtualDisplay: VirtualDisplay? = null
             displayManager.registerDisplayListener(
                 object : DisplayListenerAdapter {
                     override fun onDisplayAdded(displayId: Int) {
-                        val display = newDisplay
-                        if (display != null && display.display.displayId == displayId) {
-                            con.resume(display)
+                        val vd = virtualDisplay
+                        if (vd != null && vd.display.displayId == displayId) {
+                            con.resume(vd)
                             displayManager.unregisterDisplayListener(this)
                         }
                     }
                 },
                 Handler(Looper.myLooper() ?: Looper.getMainLooper())
             )
-            newDisplay = displayManager.createVirtualDisplay(
+            virtualDisplay = displayManager.createVirtualDisplay(
                 name,
                 layerMetrics.width,
                 layerMetrics.height,
