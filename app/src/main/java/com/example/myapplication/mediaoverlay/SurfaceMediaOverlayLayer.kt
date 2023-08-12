@@ -113,8 +113,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
         })
         mLifecycle.coroutineScope.launch {
-            val layerMetrics = mLayerMetrics.filterNotNull()
-                .distinctUntilChanged()
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 val viewTreeRenderDelegate = ViewTreeRenderDelegate(
                     context,
@@ -123,9 +121,11 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     containerView
                 )
                 try {
-                    layerMetrics.collectLatest {
-                        viewTreeRenderDelegate.resize(it)
-                    }
+                    mLayerMetrics.filterNotNull()
+                        .distinctUntilChanged()
+                        .collectLatest {
+                            viewTreeRenderDelegate.resize(it)
+                        }
                 } finally {
                     viewTreeRenderDelegate.dismiss()
                 }
