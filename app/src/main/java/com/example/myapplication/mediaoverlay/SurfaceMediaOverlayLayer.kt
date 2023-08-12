@@ -14,9 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.myapplication.R
@@ -58,16 +55,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         mContainerView.addView(view)
     }
 
-    override fun onAttachedToWindow() {
-        mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        super.onAttachedToWindow()
-    }
-
-    override fun onDetachedFromWindow() {
-        mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        super.onDetachedFromWindow()
-    }
-
     init {
         val array = context.obtainStyledAttributes(
             attrs,
@@ -94,12 +81,10 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             }
             mContainerView.addView(view)
         }
+        addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
         holder.setFormat(PixelFormat.TRANSLUCENT)
-        holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceCreated(holder: SurfaceHolder) {
-                mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-            }
-
+        holder.addCallback(mSurfaceLifecycleOwner)
+        holder.addCallback(object : SurfaceHolderCallback {
             override fun surfaceChanged(
                 holder: SurfaceHolder,
                 format: Int,
@@ -111,10 +96,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
                     height,
                     context.resources.configuration.densityDpi
                 )
-            }
-
-            override fun surfaceDestroyed(holder: SurfaceHolder) {
-                mSurfaceLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             }
         })
         mSurfaceLifecycleOwner.lifecycleScope.launch {
