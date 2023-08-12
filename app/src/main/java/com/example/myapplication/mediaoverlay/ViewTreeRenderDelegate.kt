@@ -12,6 +12,7 @@ import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -22,7 +23,12 @@ class ViewTreeRenderDelegate constructor(
     private val surface: Surface,
     private val contentView: View,
 ) {
-    val displayManager = context.getSystemService(
+    private val snapshotView by lazy {
+        SnapshotView(
+            context.applicationContext
+        )
+    }
+    private val displayManager = context.getSystemService(
         Context.DISPLAY_SERVICE
     ) as DisplayManager
     private var virtualDisplayPresentation: VirtualDisplayPresentation? = null
@@ -33,16 +39,20 @@ class ViewTreeRenderDelegate constructor(
     )
 
     private class SnapshotView(context: Context) : View(context) {
+        private val picture = Picture()
+
+        init {
+            background = PictureDrawable(picture)
+        }
+
         fun takeCapture(view: View) {
             val width = view.width
             val height = view.width
             if (width * height > 0) {
                 view.invalidate()
-                val picture = Picture()
                 val canvas = picture.beginRecording(width, height)
                 view.draw(canvas)
                 picture.endRecording()
-                view.background = PictureDrawable(picture)
             }
         }
     }
@@ -93,7 +103,6 @@ class ViewTreeRenderDelegate constructor(
                     base
                 } else {
                     var res = mOverrideResources
-
                     if (res == null || res.displayMetrics != mDisplayMetrics) {
                         res = Resources(
                             base.assets,
@@ -133,9 +142,12 @@ class ViewTreeRenderDelegate constructor(
         if (presentation.isShowing) {
             val contentView = presentation.findViewById<View>(android.R.id.content)
             if (contentView !is SnapshotView) {
-                val view = SnapshotView(presentation.context)
-                view.takeCapture(contentView)
-                presentation.setContentView(SnapshotView(presentation.context))
+                val parent = snapshotView.parent
+                if (parent is ViewGroup) {
+                    parent.removeView(snapshotView)
+                }
+                snapshotView.takeCapture(contentView)
+                presentation.setContentView(snapshotView)
             }
             suspendCoroutine { con ->
                 presentation.setOnDismissListener {
