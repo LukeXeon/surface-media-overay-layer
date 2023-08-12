@@ -11,11 +11,6 @@ import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.Space
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.view.ViewCompat
 import com.example.myapplication.R
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
