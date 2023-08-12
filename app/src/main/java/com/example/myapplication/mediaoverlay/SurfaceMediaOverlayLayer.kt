@@ -39,19 +39,17 @@ import kotlinx.coroutines.launch
 class SurfaceMediaOverlayLayer @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : SurfaceView(context, attrs, defStyleAttr) {
-    private class ContainerView(private val renderLayer: SurfaceMediaOverlayLayer) :
-        FrameLayout(renderLayer.context) {
+
+    private val mLayerMetrics = MutableStateFlow<LayerMetrics?>(null)
+    private val mSurfaceLifecycleOwner = SurfaceLifecycleOwner()
+    private val mContainerView = object : FrameLayout(getContext()) {
         override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
             super.requestDisallowInterceptTouchEvent(disallowIntercept)
-            renderLayer.parent.requestDisallowInterceptTouchEvent(
+            this@SurfaceMediaOverlayLayer.parent.requestDisallowInterceptTouchEvent(
                 disallowIntercept
             )
         }
     }
-
-    private val mLayerMetrics = MutableStateFlow<LayerMetrics?>(null)
-    private val mSurfaceLifecycleOwner = SurfaceLifecycleOwner()
-    private val mContainerView = ContainerView(this)
     val containerView: ViewGroup
         get() = mContainerView
 
@@ -77,13 +75,24 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             defStyleAttr,
             0
         )
-        val layoutId = array.getResourceId(R.styleable.SurfaceMediaOverlayLayer_android_layout, NO_ID)
+        val inflateId = array.getResourceId(
+            R.styleable.SurfaceMediaOverlayLayer_android_inflatedId,
+            NO_ID
+        )
+        val layoutId = array.getResourceId(
+            R.styleable.SurfaceMediaOverlayLayer_android_layout,
+            NO_ID
+        )
         array.recycle()
         if (layoutId != NO_ID) {
-            LayoutInflater.from(context).inflate(
+            val view = LayoutInflater.from(context).inflate(
                 layoutId,
-                mContainerView, true
+                mContainerView, false
             )
+            if (inflateId != NO_ID) {
+                view.id = inflateId
+            }
+            mContainerView.addView(mContainerView)
         }
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(object : SurfaceHolder.Callback {

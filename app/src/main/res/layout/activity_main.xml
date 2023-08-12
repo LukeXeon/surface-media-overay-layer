@@ -56,7 +56,7 @@
                         android:id="@+id/surface"
                         android:layout_width="match_parent"
                         android:layout_height="500dp"
-                        app:layout="@layout/fragment_main" />
+                        android:layout="@layout/fragment_main" />
 
                 </FrameLayout>
             </LinearLayout>
