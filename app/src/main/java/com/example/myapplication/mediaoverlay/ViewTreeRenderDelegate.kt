@@ -7,6 +7,8 @@ import android.graphics.Picture
 import android.graphics.drawable.PictureDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
@@ -20,32 +22,70 @@ class ViewTreeRenderDelegate constructor(
     private val surface: Surface,
     private val contentView: View,
 ) {
+    val displayManager = context.getSystemService(
+        Context.DISPLAY_SERVICE
+    ) as DisplayManager
+    private var virtualDisplayPresentation: VirtualDisplayPresentation? = null
+
     private data class VirtualDisplayPresentation(
         val virtualDisplay: VirtualDisplay,
         val presentation: Presentation
     )
 
-    private var virtualDisplayPresentation: VirtualDisplayPresentation? = null
+    private class SnapshotView(context: Context) : View(context) {
+        fun takeCapture(view: View) {
+            val width = view.width
+            val height = view.width
+            if (width * height > 0) {
+                view.invalidate()
+                val picture = Picture()
+                val canvas = picture.beginRecording(width, height)
+                view.draw(canvas)
+                picture.endRecording()
+                view.background = PictureDrawable(picture)
+            }
+        }
+    }
+
+    private suspend fun createNewDisplay(
+        layerMetrics: LayerMetrics
+    ): VirtualDisplay {
+        val virtualDisplay = suspendCoroutine { con ->
+            var newDisplay: VirtualDisplay? = null
+            displayManager.registerDisplayListener(
+                object : DisplayListenerAdapter {
+                    override fun onDisplayAdded(displayId: Int) {
+                        val display = newDisplay
+                        if (display != null && display.display.displayId == displayId) {
+                            con.resume(display)
+                            displayManager.unregisterDisplayListener(this)
+                        }
+                    }
+                },
+                Handler(Looper.myLooper()!!)
+            )
+            newDisplay = displayManager.createVirtualDisplay(
+                name,
+                layerMetrics.width,
+                layerMetrics.height,
+                layerMetrics.densityDpi,
+                null,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
+            )
+        }
+        return virtualDisplay
+    }
 
     @Suppress("DEPRECATION")
-    private suspend fun createNewPresentation(layerMetrics: LayerMetrics): VirtualDisplayPresentation {
-        val displayManager = context.getSystemService(
-            Context.DISPLAY_SERVICE
-        ) as DisplayManager
-        val virtualDisplay = displayManager.createVirtualDisplay(
-            name,
-            layerMetrics.width,
-            layerMetrics.height,
-            layerMetrics.densityDpi,
-            surface,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION,
-        )
+    private suspend fun createNewPresentation(
+        virtualDisplay: VirtualDisplay
+    ): Presentation {
         val presentation = object : Presentation(
             context,
             virtualDisplay.display,
             android.R.style.Theme_Translucent_NoTitleBar_Fullscreen
         ) {
-            private var mOverrideRes: Resources? = null
+            private var mOverrideResources: Resources? = null
             private val mDisplayMetrics = DisplayMetrics()
             override fun getResources(): Resources {
                 val base = super.getResources()
@@ -53,7 +93,7 @@ class ViewTreeRenderDelegate constructor(
                 return if (base.displayMetrics == mDisplayMetrics) {
                     base
                 } else {
-                    var res = mOverrideRes
+                    var res = mOverrideResources
 
                     if (res == null || res.displayMetrics != mDisplayMetrics) {
                         res = Resources(
@@ -61,7 +101,7 @@ class ViewTreeRenderDelegate constructor(
                             mDisplayMetrics,
                             base.configuration
                         )
-                        mOverrideRes = res
+                        mOverrideResources = res
                     }
                     res
                 }
@@ -78,26 +118,15 @@ class ViewTreeRenderDelegate constructor(
             }
             presentation.show()
         }
-        return VirtualDisplayPresentation(virtualDisplay, presentation)
+        return presentation
     }
 
     suspend fun resize(layerMetrics: LayerMetrics) {
         dismiss()
-        virtualDisplayPresentation = createNewPresentation(layerMetrics)
-    }
-
-    private class SnapshotView(context: Context) : View(context) {
-        fun takeCapture(view: View) {
-            val width = view.width
-            val height = view.width
-            if (width * height > 0) {
-                val picture = Picture()
-                val canvas = picture.beginRecording(width, height)
-                view.draw(canvas)
-                picture.endRecording()
-                view.background = PictureDrawable(picture)
-            }
-        }
+        val virtualDisplay = createNewDisplay(layerMetrics)
+        val presentation = createNewPresentation(virtualDisplay)
+        virtualDisplay.surface = surface
+        virtualDisplayPresentation = VirtualDisplayPresentation(virtualDisplay, presentation)
     }
 
     suspend fun dismiss() {
