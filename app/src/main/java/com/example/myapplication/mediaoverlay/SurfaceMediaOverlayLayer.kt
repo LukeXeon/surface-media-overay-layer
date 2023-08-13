@@ -59,7 +59,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             mContainerView.addView(viewStub)
             viewStub.inflate()
         }
-        setZOrderMediaOverlay(true)
         addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(mSurfaceLifecycleOwner)
