@@ -58,7 +58,7 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
         mContainerView.addView(viewStub)
         viewStub.inflate()
         addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
-        holder.setFormat(PixelFormat.TRANSLUCENT)
+        holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(mSurfaceLifecycleOwner)
         holder.addCallback(object : SurfaceHolderCallbackAdapter {
             override fun surfaceChanged(
