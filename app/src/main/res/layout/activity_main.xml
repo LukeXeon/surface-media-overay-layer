@@ -22,5 +22,12 @@
         android:layout_height="match_parent"
         android:layout="@layout/fragment_main" />
 
+    <com.example.myapplication.mediaoverlay.SurfaceMediaOverlayLayer
+        android:translationX="-20dp"
+        android:translationY="-20dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/fragment_main" />
+
 
 </FrameLayout>
