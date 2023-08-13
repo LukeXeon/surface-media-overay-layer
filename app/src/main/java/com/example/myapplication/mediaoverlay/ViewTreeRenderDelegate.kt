@@ -72,7 +72,7 @@ class ViewTreeRenderDelegate constructor(
                         }
                     }
                 },
-                Handler(Looper.myLooper() ?: Looper.getMainLooper())
+                Handler(Looper.getMainLooper())
             )
             virtualDisplay = displayManager.createVirtualDisplay(
                 name,
