@@ -17,9 +17,8 @@ import android.view.WindowManager
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class ViewTreeRenderDelegate constructor(
+class ViewTreeRenderDelegate(
     private val context: Context,
-    private val name: String,
     private val surface: Surface,
     private val contentView: View,
 ) {
@@ -75,7 +74,7 @@ class ViewTreeRenderDelegate constructor(
                 Handler(Looper.getMainLooper())
             )
             virtualDisplay = displayManager.createVirtualDisplay(
-                name,
+                surface.toString(),
                 layerMetrics.width,
                 layerMetrics.height,
                 layerMetrics.densityDpi,

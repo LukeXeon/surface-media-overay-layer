@@ -78,7 +78,6 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
             mSurfaceLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 val viewTreeRenderDelegate = ViewTreeRenderDelegate(
                     context,
-                    this@SurfaceMediaOverlayLayer.toString(),
                     holder.surface,
                     containerView
                 )
