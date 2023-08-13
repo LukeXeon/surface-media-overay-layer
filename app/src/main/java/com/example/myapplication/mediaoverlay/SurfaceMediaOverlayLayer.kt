@@ -55,8 +55,10 @@ class SurfaceMediaOverlayLayer @JvmOverloads constructor(
 
     init {
         val viewStub = ViewStub(context, attrs, defStyleAttr)
-        mContainerView.addView(viewStub)
-        viewStub.inflate()
+        if (viewStub.layoutResource != 0) {
+            mContainerView.addView(viewStub)
+            viewStub.inflate()
+        }
         addOnAttachStateChangeListener(mSurfaceLifecycleOwner)
         holder.setFormat(PixelFormat.TRANSPARENT)
         holder.addCallback(mSurfaceLifecycleOwner)
