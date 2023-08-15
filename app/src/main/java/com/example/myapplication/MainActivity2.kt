@@ -1,11 +1,17 @@
 package com.example.myapplication
 
+import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Binder
 import android.os.Bundle
+import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Space
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -32,9 +38,17 @@ class MainActivity2 : AppCompatActivity() {
         button.setOnClickListener {
             startActivity(Intent(this, MainActivity2::class.java))
         }
+
         Glide.with(imageView)
             .asGif()
             .load(getString(R.string.gif_url))
             .into(imageView)
+        val wm = getSystemService(Context.WINDOW_SERVICE)
+        supportFragmentManager
+    }
+
+    override fun onResume() {
+        super.onResume()
+
     }
 }

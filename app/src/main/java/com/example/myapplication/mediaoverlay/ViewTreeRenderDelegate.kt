@@ -84,36 +84,14 @@ class ViewTreeRenderDelegate(
         }
     }
 
-    @Suppress("DEPRECATION")
     private suspend fun createNewPresentation(
         virtualDisplay: VirtualDisplay
     ): Presentation {
-        val presentation = object : Presentation(
+        val presentation = Presentation(
             context,
             virtualDisplay.display,
             android.R.style.Theme_Translucent_NoTitleBar_Fullscreen
-        ) {
-            private var mOverrideResources: Resources? = null
-            private val mDisplayMetrics = DisplayMetrics()
-            override fun getResources(): Resources {
-                val base = super.getResources()
-                display.getMetrics(mDisplayMetrics)
-                return if (base.displayMetrics == mDisplayMetrics) {
-                    base
-                } else {
-                    var res = mOverrideResources
-                    if (res == null || res.displayMetrics != mDisplayMetrics) {
-                        res = Resources(
-                            base.assets,
-                            mDisplayMetrics,
-                            base.configuration
-                        )
-                        mOverrideResources = res
-                    }
-                    res
-                }
-            }
-        }
+        )
         val window = requireNotNull(presentation.window)
         window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         presentation.setCancelable(false)
