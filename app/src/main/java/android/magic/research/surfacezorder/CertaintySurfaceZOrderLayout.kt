@@ -42,23 +42,23 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 mSortedSurfaceViews.entries.asSequence().sortedBy { it.value }.map { it.key }
             )
             if (mTempSurfaceViews[0] != mTempSurfaceViews[1]) {
-                mTempSurfaceViews[0].forEachIndexed { index, surfaceView ->
-                    mSortedSurfaceViews[surfaceView] = index
-                }
-                var orderList: List<SurfaceView> = mTempSurfaceViews[0]
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    // 从8.0开始系统悄悄的改变了排序规则
-                    orderList = mTempSurfaceViews[0].asReversed()
-                }
-                orderList.forEach { view ->
-                    val tempVisibility = view.visibility
-                    view.visibility = View.GONE
+                for (index in mTempSurfaceViews[0].indices) {
+                    mSortedSurfaceViews[mTempSurfaceViews[0][index]] = index
+                    val order = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        // 从8.0开始系统悄悄的改变了排序规则
+                        mTempSurfaceViews[0].lastIndex - index
+                    } else {
+                        index
+                    }
+                    val surfaceView = mTempSurfaceViews[0][order]
+                    val tempVisibility = surfaceView.visibility
+                    surfaceView.visibility = View.GONE
                     sReAttachToWindowMethodSequence.runCatching {
                         forEach {
-                            it.invoke(view)
+                            it.invoke(surfaceView)
                         }
                     }
-                    view.visibility = tempVisibility
+                    surfaceView.visibility = tempVisibility
                 }
                 viewTreeObserver.dispatchOnPreDraw()
             }
