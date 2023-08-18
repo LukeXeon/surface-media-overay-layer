@@ -1,4 +1,4 @@
-package com.example.myapplication.mediaoverlay
+package android.magic.research.mediaoverlay
 
 import android.view.SurfaceHolder
 

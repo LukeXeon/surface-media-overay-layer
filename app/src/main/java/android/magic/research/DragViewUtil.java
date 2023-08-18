@@ -1,4 +1,4 @@
-package com.example.myapplication;
+package android.magic.research;
 
 import android.view.MotionEvent;
 import android.view.View;

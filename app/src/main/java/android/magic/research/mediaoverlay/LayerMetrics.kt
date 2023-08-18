@@ -1,4 +1,4 @@
-package com.example.myapplication.mediaoverlay
+package android.magic.research.mediaoverlay
 
 data class LayerMetrics(
     val width: Int,

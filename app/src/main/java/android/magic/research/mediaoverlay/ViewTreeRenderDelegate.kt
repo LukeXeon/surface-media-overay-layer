@@ -1,15 +1,13 @@
-package com.example.myapplication.mediaoverlay
+package android.magic.research.mediaoverlay
 
 import android.app.Presentation
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.Picture
 import android.graphics.drawable.PictureDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Handler
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.view.Surface
 import android.view.View
 import android.view.ViewGroup

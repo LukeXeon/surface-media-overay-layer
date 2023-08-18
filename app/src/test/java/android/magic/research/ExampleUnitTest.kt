@@ -1,4 +1,4 @@
-package com.example.myapplication
+package android.magic.research
 
 import org.junit.Test
 
