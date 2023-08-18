@@ -50,13 +50,13 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                     orderList = mTempSurfaceViews[0].asReversed()
                 }
                 orderList.forEach { view ->
+                    val tempVisibility = view.visibility
+                    view.visibility = View.GONE
                     sReAttachToWindowMethodSequence.runCatching {
                         forEach {
                             it.invoke(view)
                         }
                     }
-                    val tempVisibility = view.visibility
-                    view.visibility = View.GONE
                     view.visibility = tempVisibility
                 }
                 viewTreeObserver.dispatchOnPreDraw()
