@@ -40,7 +40,7 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 mSortedSurfaceViews.addAll(mAllSurfaceViews)
                 // 从8.0开始系统悄悄的改变了排序规则
                 val orderList = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    mSortedSurfaceViews.reversed()
+                    mSortedSurfaceViews.asReversed()
                 } else {
                     mSortedSurfaceViews
                 }
