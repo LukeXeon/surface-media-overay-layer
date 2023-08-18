@@ -28,12 +28,13 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
         }
     }
 
+    private var mSkipSort = false
     private val mSortedSurfaceViews = WeakHashMap<SurfaceView, Int>()
     private val mTempSurfaceViews = Array(2) { ArrayList<SurfaceView>() }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if (!ancestors.any { it is CertaintySurfaceZOrderLayout }) {
+        if (!mSkipSort) {
             mTempSurfaceViews[0].clear()
             mTempSurfaceViews[0].addAll(allViews.filterIsInstance<SurfaceView>())
             mTempSurfaceViews[1].ensureCapacity(mSortedSurfaceViews.size)
@@ -64,8 +65,6 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
             mTempSurfaceViews.forEach {
                 it.clear()
             }
-        } else {
-            clearAllState()
         }
     }
 
@@ -74,6 +73,11 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
             it.clear()
         }
         mSortedSurfaceViews.clear()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        mSkipSort = ancestors.any { it is CertaintySurfaceZOrderLayout }
     }
 
     override fun onDetachedFromWindow() {
