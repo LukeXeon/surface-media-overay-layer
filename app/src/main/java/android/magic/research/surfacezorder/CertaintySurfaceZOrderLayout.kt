@@ -53,8 +53,8 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                     val tempVisibility = view.visibility
                     view.visibility = View.GONE
                     view.visibility = tempVisibility
-                    view.viewTreeObserver.dispatchOnPreDraw()
                 }
+                viewTreeObserver.dispatchOnPreDraw()
             }
         } else {
             mAllSurfaceViews.clear()
