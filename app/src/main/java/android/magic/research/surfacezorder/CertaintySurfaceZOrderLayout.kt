@@ -10,13 +10,16 @@ import android.widget.FrameLayout
 import androidx.core.view.allViews
 import androidx.core.view.ancestors
 import java.util.WeakHashMap
+import kotlin.math.max
 
 class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
-    companion object {
-        private val REATTACH_TO_WINDOW_METHOD_SEQUENCE by lazy {
-            sequenceOf(
+    private lateinit var mZOrderSorter: ZOrderSorter
+
+    private class ZOrderSorter(private val mHost: View) : ViewTreeObserver.OnGlobalLayoutListener {
+        companion object {
+            private val REATTACH_TO_WINDOW_METHOD_SEQUENCE = sequenceOf(
                 "onDetachedFromWindow",
                 "onAttachedToWindow"
             ).map {
@@ -27,83 +30,84 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 it.isAccessible = true
             }.toList()
         }
-    }
 
-    private var mHasNewLayout = false
-    private lateinit var mSortedSurfaceViews: WeakHashMap<SurfaceView, Int>
-    private lateinit var mTempSurfaceViews: Array<ArrayList<SurfaceView>>
-    private lateinit var mOnGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener
+        private var mHasNewLayout = false
+        private val mTempNewSurfaceViews = ArrayList<SurfaceView>()
+        private val mTempOldSurfaceViews = ArrayList<SurfaceView>()
+        private val mSortedSurfaceViews = WeakHashMap<SurfaceView, Int>()
+
+        fun markLayout() {
+            mHasNewLayout = true
+        }
+
+        fun clear() {
+            mHasNewLayout = false
+            mSortedSurfaceViews.clear()
+            mTempOldSurfaceViews.clear()
+            mTempNewSurfaceViews.clear()
+        }
+
+        override fun onGlobalLayout() {
+            if (!mHasNewLayout) {
+                return
+            }
+            mHasNewLayout = false
+            mTempNewSurfaceViews.addAll(mHost.allViews.filterIsInstance<SurfaceView>())
+            mTempOldSurfaceViews.apply {
+                ensureCapacity(mSortedSurfaceViews.size)
+                addAll(
+                    mSortedSurfaceViews.entries.asSequence().sortedBy { it.value }.map { it.key }
+                )
+            }
+            if (max(mTempOldSurfaceViews.size, mTempNewSurfaceViews.size) > 0
+                && mTempOldSurfaceViews != mTempNewSurfaceViews
+            ) {
+                for (index in mTempNewSurfaceViews.indices) {
+                    mSortedSurfaceViews[mTempNewSurfaceViews[index]] = index
+                    val order = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        // 从8.0开始系统悄悄的改变了排序规则
+                        mTempNewSurfaceViews.lastIndex - index
+                    } else {
+                        index
+                    }
+                    val surfaceView = mTempNewSurfaceViews[order]
+                    val tempVisibility = surfaceView.visibility
+                    surfaceView.visibility = View.GONE
+                    REATTACH_TO_WINDOW_METHOD_SEQUENCE.runCatching {
+                        forEach {
+                            it.invoke(surfaceView)
+                        }
+                    }
+                    surfaceView.visibility = tempVisibility
+                }
+            }
+            mTempOldSurfaceViews.clear()
+            mTempNewSurfaceViews.clear()
+        }
+    }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        mHasNewLayout = true
-    }
-
-    private fun onPostLayout() {
-        if (!this::mTempSurfaceViews.isInitialized) {
-            mTempSurfaceViews = Array(2) { ArrayList(childCount) }
-        }
-        mTempSurfaceViews[0].addAll(allViews.filterIsInstance<SurfaceView>())
-        if (!this::mSortedSurfaceViews.isInitialized) {
-            mSortedSurfaceViews = WeakHashMap()
-        } else {
-            mTempSurfaceViews[1].ensureCapacity(mSortedSurfaceViews.size)
-            mTempSurfaceViews[1].addAll(
-                mSortedSurfaceViews.entries.asSequence().sortedBy { it.value }.map { it.key }
-            )
-        }
-        if (mTempSurfaceViews.any { it.isNotEmpty() } && mTempSurfaceViews[0] != mTempSurfaceViews[1]) {
-            for (index in mTempSurfaceViews[0].indices) {
-                mSortedSurfaceViews[mTempSurfaceViews[0][index]] = index
-                val order = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    // 从8.0开始系统悄悄的改变了排序规则
-                    mTempSurfaceViews[0].lastIndex - index
-                } else {
-                    index
-                }
-                val surfaceView = mTempSurfaceViews[0][order]
-                val tempVisibility = surfaceView.visibility
-                surfaceView.visibility = View.GONE
-                REATTACH_TO_WINDOW_METHOD_SEQUENCE.runCatching {
-                    forEach {
-                        it.invoke(surfaceView)
-                    }
-                }
-                surfaceView.visibility = tempVisibility
-            }
-        }
-        mTempSurfaceViews.forEach {
-            it.clear()
+        if (this::mZOrderSorter.isInitialized) {
+            mZOrderSorter.markLayout()
         }
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (!ancestors.any { it is CertaintySurfaceZOrderLayout }) {
-            if (!this::mOnGlobalLayoutListener.isInitialized) {
-                mOnGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-                    if (mHasNewLayout) {
-                        mHasNewLayout = false
-                        onPostLayout()
-                    }
-                }
+            if (!this::mZOrderSorter.isInitialized) {
+                mZOrderSorter = ZOrderSorter(this)
             }
-            viewTreeObserver.addOnGlobalLayoutListener(mOnGlobalLayoutListener)
+            viewTreeObserver.addOnGlobalLayoutListener(mZOrderSorter)
         }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        if (this::mOnGlobalLayoutListener.isInitialized) {
-            viewTreeObserver.removeOnGlobalLayoutListener(mOnGlobalLayoutListener)
-        }
-        if (this::mTempSurfaceViews.isInitialized) {
-            mTempSurfaceViews.forEach {
-                it.clear()
-            }
-        }
-        if (this::mSortedSurfaceViews.isInitialized) {
-            mSortedSurfaceViews.clear()
+        if (this::mZOrderSorter.isInitialized) {
+            viewTreeObserver.removeOnGlobalLayoutListener(mZOrderSorter)
+            mZOrderSorter.clear()
         }
     }
 }
