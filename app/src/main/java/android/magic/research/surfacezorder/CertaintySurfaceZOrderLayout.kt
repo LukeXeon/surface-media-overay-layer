@@ -15,7 +15,7 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
     companion object {
-        private val RE_ATTACH_TO_WINDOW_METHOD_SEQUENCE by lazy {
+        private val REATTACH_TO_WINDOW_METHOD_SEQUENCE by lazy {
             sequenceOf(
                 "onDetachedFromWindow",
                 "onAttachedToWindow"
@@ -64,7 +64,7 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 val surfaceView = mTempSurfaceViews[0][order]
                 val tempVisibility = surfaceView.visibility
                 surfaceView.visibility = View.GONE
-                RE_ATTACH_TO_WINDOW_METHOD_SEQUENCE.runCatching {
+                REATTACH_TO_WINDOW_METHOD_SEQUENCE.runCatching {
                     forEach {
                         it.invoke(surfaceView)
                     }
