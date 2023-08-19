@@ -71,7 +71,6 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 }
                 surfaceView.visibility = tempVisibility
             }
-            viewTreeObserver.dispatchOnPreDraw()
         }
         mTempSurfaceViews.forEach {
             it.clear()
