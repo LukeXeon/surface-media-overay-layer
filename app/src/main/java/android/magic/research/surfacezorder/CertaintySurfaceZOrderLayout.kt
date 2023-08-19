@@ -52,7 +52,7 @@ class CertaintySurfaceZOrderLayout @JvmOverloads constructor(
                 mSortedSurfaceViews.entries.asSequence().sortedBy { it.value }.map { it.key }
             )
         }
-        if (mTempSurfaceViews.all { it.isNotEmpty() } && mTempSurfaceViews[0] != mTempSurfaceViews[1]) {
+        if (mTempSurfaceViews.any { it.isNotEmpty() } && mTempSurfaceViews[0] != mTempSurfaceViews[1]) {
             for (index in mTempSurfaceViews[0].indices) {
                 mSortedSurfaceViews[mTempSurfaceViews[0][index]] = index
                 val order = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
