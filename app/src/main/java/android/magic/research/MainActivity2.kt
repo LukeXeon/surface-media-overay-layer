@@ -57,6 +57,7 @@ class MainActivity2 : AppCompatActivity() {
             startActivity(Intent(this, MainActivity2::class.java))
         }
 
+
         Glide.with(imageView)
             .asGif()
             .load(getString(R.string.gif_url))
