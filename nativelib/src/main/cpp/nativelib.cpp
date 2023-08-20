@@ -1,31 +1,16 @@
 #include <jni.h>
-#include <alloca.h>
 
-static jclass getPrimitiveType(
-        JNIEnv *env,
-        const char *name
-) {
-    auto clazz = env->FindClass(name);
-    auto fieldId = env->GetStaticFieldID(
-            clazz,
-            "TYPE",
-            "Ljava/lang/Class;"
-    );
-    auto primitiveType = (jclass) env->GetStaticObjectField(clazz, fieldId);
-    env->DeleteLocalRef(clazz);
-    return primitiveType;
-}
 
-static bool matchPrimitiveType(
-        JNIEnv *env,
-        jclass clazz,
-        const char *name
-) {
-    auto primitiveType = getPrimitiveType(env, name);
-    auto ret = env->IsSameObject(clazz, primitiveType);
-    env->DeleteLocalRef(primitiveType);
-    return ret;
-}
+static jmethodID getComponentTypeMethodId = nullptr;
+static jmethodID getDeclaringClassMethodId = nullptr;
+static jclass booleanClass = nullptr;
+static jclass byteClass = nullptr;
+static jclass charClass = nullptr;
+static jclass floatClass = nullptr;
+static jclass doubleClass = nullptr;
+static jclass shortClass = nullptr;
+static jclass intClass = nullptr;
+static jclass longClass = nullptr;
 
 struct CallContext {
     jmethodID methodId;
@@ -38,55 +23,35 @@ struct CallContext {
             jobjectArray args
     ) {
         methodId = env->FromReflectedMethod(method);
-        static jmethodID getDeclaringClassMethodId = nullptr;
-        if (!getDeclaringClassMethodId) {
-            auto methodClazz = env->GetObjectClass(method);
-            getDeclaringClassMethodId = env->GetMethodID(
-                    methodClazz,
-                    "getDeclaringClass",
-                    "()Ljava/lang/Class;"
-            );
-            env->DeleteLocalRef(methodClazz);
-        }
         clazz = (jclass) env->CallObjectMethod(
                 method,
                 getDeclaringClassMethodId
         );
         auto length = env->GetArrayLength(args);
         nativeArgs = new jvalue[length];
-        static jmethodID getComponentTypeMethodId = nullptr;
-        if (!getComponentTypeMethodId) {
-            auto clazzClazz = env->FindClass("java/lang/Class");
-            getComponentTypeMethodId = env->GetMethodID(
-                    clazzClazz,
-                    "getComponentType",
-                    "()Ljava/lang/Class;"
-            );
-            env->DeleteLocalRef(clazzClazz);
-        }
         for (int i = 0; i < length; ++i) {
             auto subArray = env->GetObjectArrayElement(args, i);
             if (subArray != nullptr) {
-                auto subArrayType = env->GetObjectClass(subArray);
-                auto valueType = (jclass) env->CallObjectMethod(
-                        subArrayType,
+                auto subArrayClass = env->GetObjectClass(subArray);
+                auto valueClass = (jclass) env->CallObjectMethod(
+                        subArrayClass,
                         getComponentTypeMethodId
                 );
-                if (matchPrimitiveType(env, valueType, "java/lang/Boolean")) {
+                if (env->IsSameObject(valueClass, booleanClass)) {
                     env->GetBooleanArrayRegion((jbooleanArray) subArray, 0, 1, &nativeArgs[i].z);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Byte")) {
+                } else if (env->IsSameObject(valueClass, byteClass)) {
                     env->GetByteArrayRegion((jbyteArray) subArray, 0, 1, &nativeArgs[i].b);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Character")) {
+                } else if (env->IsSameObject(valueClass, charClass)) {
                     env->GetCharArrayRegion((jcharArray) subArray, 0, 1, &nativeArgs[i].c);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Float")) {
+                } else if (env->IsSameObject(valueClass, floatClass)) {
                     env->GetFloatArrayRegion((jfloatArray) subArray, 0, 1, &nativeArgs[i].f);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Double")) {
+                } else if (env->IsSameObject(valueClass, doubleClass)) {
                     env->GetDoubleArrayRegion((jdoubleArray) subArray, 0, 1, &nativeArgs[i].d);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Short")) {
+                } else if (env->IsSameObject(valueClass, shortClass)) {
                     env->GetShortArrayRegion((jshortArray) subArray, 0, 1, &nativeArgs[i].s);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Integer")) {
+                } else if (env->IsSameObject(valueClass, intClass)) {
                     env->GetIntArrayRegion((jintArray) subArray, 0, 1, &nativeArgs[i].i);
-                } else if (matchPrimitiveType(env, valueType, "java/lang/Long")) {
+                } else if (env->IsSameObject(valueClass, longClass)) {
                     env->GetLongArrayRegion((jlongArray) subArray, 0, 1, &nativeArgs[i].j);
                 } else {
                     nativeArgs[i].l = env->GetObjectArrayElement((jobjectArray) subArray, 0);
@@ -102,6 +67,49 @@ struct CallContext {
     }
 };
 
+static jclass getPrimitiveType(
+        JNIEnv *env,
+        const char *name
+) {
+    auto localClass = env->FindClass(name);
+    auto fieldId = env->GetStaticFieldID(
+            localClass,
+            "TYPE",
+            "Ljava/lang/Class;"
+    );
+    auto localPrimitiveType = env->GetStaticObjectField(localClass, fieldId);
+    auto primitiveType = (jclass) env->NewGlobalRef(localPrimitiveType);
+    env->DeleteLocalRef(localClass);
+    env->DeleteLocalRef(localPrimitiveType);
+    return primitiveType;
+}
+
+
+extern "C"
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env = nullptr;
+    vm->GetEnv((void **) (&env), JNI_VERSION_1_6);
+    getDeclaringClassMethodId = env->GetMethodID(
+            env->FindClass("java/lang/reflect/Method"),
+            "getDeclaringClass",
+            "()Ljava/lang/Class;"
+    );
+    getComponentTypeMethodId = env->GetMethodID(
+            env->FindClass("java/lang/Class"),
+            "getComponentType",
+            "()Ljava/lang/Class;"
+    );
+    booleanClass = getPrimitiveType(env, "java/lang/Boolean");
+    byteClass = getPrimitiveType(env, "java/lang/Byte");
+    charClass = getPrimitiveType(env, "java/lang/Character");
+    floatClass = getPrimitiveType(env, "java/lang/Float");
+    doubleClass = getPrimitiveType(env, "java/lang/Double");
+    shortClass = getPrimitiveType(env, "java/lang/Short");
+    intClass = getPrimitiveType(env, "java/lang/Integer");
+    longClass = getPrimitiveType(env, "java/lang/Long");
+    return JNI_VERSION_1_6;
+}
 
 extern "C"
 JNIEXPORT jboolean JNICALL

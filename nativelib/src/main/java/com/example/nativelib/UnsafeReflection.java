@@ -15,6 +15,10 @@ public class UnsafeReflection {
         throw new AssertionError();
     }
 
+    static {
+        System.loadLibrary("unsafe-reflection");
+    }
+
     private static class NativeArgsCache {
         private final SparseArrayCompat<Object[]> mArgumentsArrayCache = new SparseArrayCompat<>();
         private final ArrayMap<Class<?>, Pools.SimplePool<Object>> mSubArrayCache = new ArrayMap<>();
