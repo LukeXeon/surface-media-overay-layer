@@ -1,8 +1,8 @@
 package com.example.nativelib;
 
-import android.util.ArrayMap;
 
 import androidx.annotation.NonNull;
+import androidx.collection.SimpleArrayMap;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.util.Pools;
 
@@ -21,7 +21,7 @@ public class UnsafeReflection {
 
     private static class NativeArgsCache {
         private final SparseArrayCompat<Object[]> mArgumentsArrayCache = new SparseArrayCompat<>();
-        private final ArrayMap<Class<?>, Pools.SimplePool<Object>> mSubArrayCache = new ArrayMap<>();
+        private final SimpleArrayMap<Class<?>, Pools.SimplePool<Object>> mSubArrayCache = new SimpleArrayMap<>();
 
         Object[] obtain(Method method, Object[] arguments) {
             Class<?>[] parameterTypes = method.getParameterTypes();
